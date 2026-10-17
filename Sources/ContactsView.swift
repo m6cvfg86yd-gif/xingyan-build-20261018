@@ -154,13 +154,7 @@ private var funcs: [(String, String, Color, String)] {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(C.label)
                                 .frame(width: 36, height: 36)
-                                .background {
-                                    GlassBackground(shape: Circle(),
-                                                    edgeAlpha: 0,
-                                                    shadow: UIConfig.num("navButtonGlassShadow", 0) > 0,
-                                                    seed: 0.40,
-                                                    native: false)
-                                }
+                                .background { GlassBackground(shape: Circle(), shadow: true, seed: 0.40) }
                                 .contentShape(Circle())
                         }
                         .buttonStyle(.plain)

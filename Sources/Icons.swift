@@ -27,9 +27,6 @@ struct GlassBackground<S: Shape>: View {
     var tint: Color? = nil
     @Environment(\.colorScheme) private var scheme
 
-    /// 全局玻璃角光总开关。默认关闭；写 1 才恢复白色亮边、内侧高光和七彩回光。
-    private var rimLightOn: Bool { UIConfig.num("glassRimLight", 0) > 0 }
-
     /// 实际用的染色：
     ///   ① 外面显式传了 tint 就用它（底栏那套「磨砂黑玻璃」是自己传的）；
     ///   ② 没传、又是**深色模式** → 用全局那套磨砂黑（ui.json 的 glassDarkTint /
@@ -51,9 +48,7 @@ struct GlassBackground<S: Shape>: View {
     /// 苹果液态玻璃那道"七彩回光"：青→紫→粉→金→绿，绕着边缘转一圈。
     /// 透明度和亮边一样，所以是"玻璃反光"而不是贴了张彩虹贴纸。
     private var iridescent: AngularGradient {
-        let a = rimLightOn
-            ? (edgeAlpha ?? UIConfig.num("glassEdgeAlpha", 0.75)) * 0.85
-            : 0
+        let a = (edgeAlpha ?? UIConfig.num("glassEdgeAlpha", 0.75)) * 0.85
         return AngularGradient(
             colors: [
                 Color(red: 0.32, green: 0.86, blue: 1.00).opacity(a),   // 青
@@ -74,7 +69,7 @@ struct GlassBackground<S: Shape>: View {
            带折射（lens）+ 镜面回光 + 随环境自适应的明暗。
            设备是 iOS 26 才走这条；低版本和旧编译链自动退回下面我们自己的近似画法。
            ============================================================ */
-        if #available(iOS 26.0, *), native, rimLightOn, UIConfig.num("nativeGlass", 1) > 0 {
+        if #available(iOS 26.0, *), native, UIConfig.num("nativeGlass", 1) > 0 {
             Color.clear
                 /* 这里**不能**用 .interactive()：那是给按钮那种"按下去会变形"的玻璃用的，
                    它会给这块玻璃挂上触摸响应，压在列表/滚动区上时会把手指的手势吃掉
@@ -105,9 +100,7 @@ struct GlassBackground<S: Shape>: View {
     /// 旧系统上用我们自己画的近似玻璃（多层毛玻璃 + 亮边 + 七彩回光 + 底部暗边）
     private var fallbackGlass: some View {
         let layers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-        let edge = rimLightOn
-            ? (edgeAlpha ?? UIConfig.num("glassEdgeAlpha", 0.75))
-            : 0
+        let edge = edgeAlpha ?? UIConfig.num("glassEdgeAlpha", 0.75)
         return ZStack {
             /* ① 模糊层：叠一层就多糊一档（苹果那种"糊但通透"） */
             ZStack {
@@ -134,7 +127,7 @@ struct GlassBackground<S: Shape>: View {
                                         startPoint: .center, endPoint: .bottom),
                          lineWidth: 0.7)
             /* ⑤ 七彩回光：绕着边缘一圈（每块玻璃 seed 不同 → 颜色不同） */
-            if rimLightOn && UIConfig.num("glassIridescent", 1) > 0 {
+            if UIConfig.num("glassIridescent", 1) > 0 {
                 shape.stroke(iridescent, lineWidth: 1.2)
             }
         }

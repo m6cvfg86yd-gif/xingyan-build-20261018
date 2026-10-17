@@ -504,12 +504,10 @@ struct TabBar: View {
                 }
                 GlassBackground(shape: Rectangle(),
                                 opacity: UIConfig.num("tabBarGlass", 0.9),
-                                /* 用户要求关闭 iOS 底栏角光：亮边和七彩回光全部归零，
-                                   同时不用原生玻璃，避免系统倒角继续带出高光。 */
                                 edgeAlpha: 0,
                                 shadow: false,
                                 seed: 0.55,
-                                native: false)
+                                native: true)
                 /* 2026-10-17 用户点出底栏的本质是 **vibrancy**（.bar 材质）——
                    那层颜色默认从 0.22 收到 0.10，让材质的味道出来；
                    想要更"实"就后台 ui.json 把 tabBarOpaque 调大。 */
@@ -804,10 +802,8 @@ struct NavBar<Right: View>: View {
                             .background {
                                 if useFloating {
                                     GlassBackground(shape: Circle(),
-                                                    edgeAlpha: 0,
-                                                    shadow: UIConfig.num("navButtonGlassShadow", 0) > 0,
-                                                    seed: 0.10,
-                                                    native: false)
+                                                    shadow: true,
+                                                    seed: 0.10)
                                 }
                             }
                     }
@@ -823,10 +819,8 @@ struct NavBar<Right: View>: View {
                             .padding(.horizontal, 6)
                             .background {
                                 GlassBackground(shape: Capsule(),
-                                                edgeAlpha: 0,
-                                                shadow: UIConfig.num("navButtonGlassShadow", 0) > 0,
-                                                seed: 0.55,
-                                                native: false)
+                                                shadow: true,
+                                                seed: 0.55)
                             }
                             .padding(.leading, 6)
                     } else {
@@ -841,10 +835,8 @@ struct NavBar<Right: View>: View {
                         .frame(height: 36)
                         .background {
                             GlassBackground(shape: Capsule(),
-                                            edgeAlpha: 0,
-                                            shadow: UIConfig.num("navButtonGlassShadow", 0) > 0,
-                                            seed: 0.80,
-                                            native: false)
+                                            shadow: true,
+                                            seed: 0.80)
                         }
                         .padding(.trailing, 10)
                 } else {
