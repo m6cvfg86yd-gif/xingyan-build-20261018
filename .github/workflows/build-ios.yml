@@ -1,0 +1,320 @@
+# ============================================================
+#  GitHub 云端打包（不用 Mac）
+#  推到 GitHub 后，这里会自动编译出 CHRISChat-unsigned.ipa
+#  在仓库的 Actions 页面点进去就能下载，然后用爱思助手签名安装。
+#
+#  仓库要设成 Public（公开）—— 公开仓库的 macOS 机器时间完全免费。
+# ============================================================
+name: build-ios
+
+# 发 Release 要用到写权限（GITHUB_TOKEN 默认只有读）
+permissions:
+  contents: write
+
+on:
+  push:
+    # 只有 iOS 端源码变了才打包：服务端/文档的提交不该浪费 macOS 构建时间
+    # （私有仓库的 macOS 分钟是计费的，公开仓库才免费）
+    paths:
+      - 'Sources/**'
+      - 'Info.plist'
+      # 打包流程自己改了也要重新出一版（否则改了 workflow 推上去不会触发）
+      - '.github/workflows/build-ios.yml'
+      # 启动图也在包里（CI 会把它拷进 App），换了图必须重新打包
+      - 'splash.png'
+      - 'splash.jpg'
+      # 朋友圈默认封面（没设封面时显示的那张风景照），也在包里
+      - 'moments-cover.jpg'
+      # 等级图标（Blender 渲的 3D 图）也在包里，换了必须重新打包
+      - 'levelicons/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    # macos-26 自带 Xcode 26（Swift 6.2）—— 只有它才有 iOS 26 SDK，
+    # 「液态玻璃」的原生 API（glassEffect / UIGlassEffect）才编得出来。
+    # 设备是 iOS 26 走原生玻璃；低版本自动退回我们自己画的那套近似玻璃。
+    # 构建机：**macos-15**（不再用 macos-26）。
+    # 原因：macos-26 那个池子容量太紧 —— 实测 job 排队 15~18 分钟一个 step 都没跑，
+    # 最后直接被取消（B848/B849/B850 连着重现）。macos-15 上**同样装了 Xcode 26
+    # （26.3 / iOS 26 SDK）**，只是默认还是 16.4，所以下面显式切到 Xcode 26。
+    # 切过去以后原生 glassEffect 照样编得出来（代码里是 #if compiler(>=6.2) 判断的）。
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 选 Xcode 26（macos-15 默认 16.4，必须切过去才有 iOS 26 SDK / 原生玻璃）
+        run: |
+          set -e
+          ls -d /Applications/Xcode_26*.app 2>/dev/null || true
+          PICK="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          if [ -z "$PICK" ]; then echo "这台机器上没有 Xcode 26"; exit 1; fi
+          sudo xcode-select -s "$PICK"
+          echo "用上了 $PICK"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      # 语音/视频通话要用的 WebRTC（官方 iOS 二进制，也是 SPM 上大家用的那份）
+      # 包会大不少（解压后大概 90MB），这是 WebRTC 的固有体积。
+      - name: 下载 WebRTC 框架
+        run: |
+          set -e
+          # 先从我们自己服务器拿镜像（2026-09-29 GitHub 的 release 下载连续返 500，
+          # 整个打包就断在这一步），拿不到再回退 GitHub 官方地址。
+          # ⚠ 这两个地址都要加超时：2026-10-12 那次自家镜像（香港）拉了 20 多分钟还没完，
+          # 整个构建就干等在那一步。加 --max-time 之后，慢就直接回退 GitHub 官方源（runner 在
+          # 国外，拉 GitHub 反而是快的）。
+          if ! curl -L --fail --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 -o /tmp/webrtc.zip \
+              https://aa.x8iu.com/webrtc/WebRTC-M153.xcframework.zip; then
+            echo "自家镜像拿不到，回退 GitHub 官方"
+            curl -L --fail --retry 5 --retry-delay 3 --connect-timeout 15 --max-time 900 -o /tmp/webrtc.zip \
+              https://github.com/stasel/WebRTC/releases/download/153.0.0/WebRTC-M153.xcframework.zip
+          fi
+          ls -lh /tmp/webrtc.zip
+          rm -rf WebRTCKit && mkdir -p WebRTCKit
+          unzip -q /tmp/webrtc.zip -d WebRTCKit
+          ls WebRTCKit
+          ls WebRTCKit/WebRTC.xcframework
+          ls WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework
+
+      # 腾讯云 TRTC（音视频通话）：官方 iOS SDK。通话走腾讯云的接入点，
+      # 这样就算自家机房的 TURN 走 UDP 被挡（实测 3478/udp 外资进不来），通话也不受影响。
+      - name: 下载 TRTC 音视频 SDK
+        run: |
+          set -e
+          curl -L --fail -o /tmp/trtc.zip \
+            https://liteav.sdk.qcloud.com/download/latest/TXLiteAVSDK_TRTC_iOS_latest.zip
+          rm -rf /tmp/trtc-x TRTCKit && mkdir -p /tmp/trtc-x TRTCKit
+          unzip -q /tmp/trtc.zip -d /tmp/trtc-x
+          # 注意：必须取「设备」那一片（ios-arm64_armv7）。写成 *ios-arm64* 会先匹配到
+          # ios-arm64_x86_64-simulator（模拟器片），链接时会报 “built for iOS Simulator”。
+          # TRTC 主库自己还依赖两个动态库（TXFFmpeg / TXSoundTouch），
+          # 三个都必须嵌进 App —— 少一个就是「一启动就闪退」（dyld: Library not loaded）。
+          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+            FW="$(find /tmp/trtc-x -type d -name "$NAME.framework" -path '*ios-arm64_armv7*' | head -1)"
+            if [ -z "$FW" ]; then echo "没找到 $NAME 的设备片"; exit 1; fi
+            cp -R "$FW" TRTCKit/
+            lipo -info "TRTCKit/$NAME.framework/$NAME" || true
+          done
+          ls -la TRTCKit
+
+      # 英文词典里有重复 key 的话，Swift 的字典字面量会在启动时直接崩（以前线上崩过好几次）。
+      # 这里打包前先查一遍，有问题就让这次构建失败，别把崩溃版发出去。
+      - name: 检查英文词典有没有重复 key
+        run: |
+          python3 - <<'PY'
+          import re, collections, sys
+          t = open('Sources/L10n.swift', encoding='utf-8').read()
+          keys = re.findall(r'^\s{8}"((?:[^"\\]|\\.)*)":', t, re.M)
+          dups = [k for k, v in collections.Counter(keys).items() if v > 1]
+          print('L10n keys =', len(keys), ' duplicates =', dups)
+          sys.exit(1 if dups else 0)
+          PY
+
+      - name: 编译原生 App
+        id: build
+        run: |
+          set -e
+          # 把这次的构建号和打包时间写进 Info.plist：
+          # 手机上「我 → 设置 → 关于」和崩溃上报里都能对上到底是哪一版
+          # ⚠ 以前是 date -u（UTC）：手机上「关于」页显示的构建时间比北京时间少 8 小时
+          # （用户看到的「时间还是 xxx 分的那个」就是这个坑）。改成北京时间。
+          # 构建号 = 625 + 这个 workflow 的第几次运行。
+          # 为什么要加基数：手机「关于」页和后台的更新提示都在比这个数字，云 Mac 那条线
+          # 已经跑到 B9xx，而这里的 run_number 才 300 多 —— 不补基数新包会被当成
+          # "比手机上的旧"，更新提示就不弹。基数往上调时改下面这个 625 即可。
+          BUILDDATE="$(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
+          BUILDNO=$(( 625 + ${{ github.run_number }} ))
+          echo "构建号 = $BUILDNO"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILDNO" Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :BuildDate string $BUILDDATE" Info.plist \
+            || /usr/libexec/PlistBuddy -c "Set :BuildDate $BUILDDATE" Info.plist || true
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          APP="Payload/CHRISChat.app"
+          rm -rf Payload
+          mkdir -p "$APP"
+          cp Info.plist "$APP/Info.plist"
+          cp AppIcon60x60@2x.png "$APP/"
+          cp AppIcon60x60@3x.png "$APP/"
+          # 自己的启动页图片（代码里 UIImage(named: "splash") 取它）
+          # 启动图用 JPEG：同一张 1290×2796 的图，PNG 5.4MB、JPEG 0.37MB
+          # （UIImage(named: "splash") 不挑扩展名，jpg 一样能取到）
+          cp splash.jpg "$APP/"
+          # 朋友圈默认封面（代码里 UIImage(named: "moments-cover") 取它）：
+          # 用户没设封面时显示这张微信风风景照；自己设过封面的人仍然用自己的
+          cp moments-cover.jpg "$APP/"
+          # 等级图标：Blender 渲的 3D 图（星星/月亮/太阳/皇冠），拷进 App 根目录，
+          # 代码里用 UIImage(named: "level-star-3d") 取；图没在包里会自动退回自绘那套
+          cp levelicons/*.png "$APP/"
+          # 启动屏底色：系统那张「启动屏」默认是白的，冷启动会先闪一下白。
+          # 这里编一个只含纯黑颜色的 Assets.car，Info.plist 的 UILaunchScreen
+          # 用 UIColorName=LaunchBg 指过来 —— 冷启动从第一帧就是黑的，和启动页同色。
+          # 万一 actool 不认（老工具链），只是退回系统默认底色，不影响打包。
+          mkdir -p Assets.xcassets/LaunchBg.colorset
+          cat > Assets.xcassets/Contents.json <<'JSON'
+          { "info": { "version": 1, "author": "xcode" } }
+          JSON
+          cat > Assets.xcassets/LaunchBg.colorset/Contents.json <<'JSON'
+          {
+            "colors": [
+              {
+                "idiom": "universal",
+                "color": {
+                  "color-space": "srgb",
+                  "components": { "red": "0.000", "green": "0.000", "blue": "0.000", "alpha": "1.000" }
+                }
+              }
+            ],
+            "info": { "version": 1, "author": "xcode" }
+          }
+          JSON
+          xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
+            --target-device iphone --minimum-deployment-target 16.0 \
+            --output-format human-readable-text > /dev/null 2>&1 \
+            || echo "actool 跳过：启动屏用系统默认底色"
+          ls -la "$APP" | head -20
+          # 语音球的 GPU 着色器：编成 default.metallib 放进 App 根目录
+          # （SwiftUI 的 ShaderLibrary.default 就是从 bundle 根目录找 default.metallib）。
+          # 有了它，那颗球才是按像素算的球面光照 + 流动 + 色散，不是叠几层渐变。
+          xcrun -sdk iphoneos metal -c Sources/VoiceOrb.metal -o /tmp/VoiceOrb.air
+          xcrun -sdk iphoneos metallib /tmp/VoiceOrb.air -o "$APP/default.metallib"
+          ls -lh "$APP/default.metallib"
+          # 把 WebRTC 打进 App 里（动态库，运行时从 @executable_path/Frameworks 加载）
+          mkdir -p "$APP/Frameworks"
+          cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
+          # 腾讯云 TRTC 的三个动态库全嵌进来（各只留 arm64，省体积）
+          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+            cp -R "TRTCKit/$NAME.framework" "$APP/Frameworks/$NAME.framework"
+            lipo -thin arm64 "$APP/Frameworks/$NAME.framework/$NAME" \
+              -output "$APP/Frameworks/$NAME.framework/$NAME.arm64" || true
+            if [ -f "$APP/Frameworks/$NAME.framework/$NAME.arm64" ]; then
+              mv "$APP/Frameworks/$NAME.framework/$NAME.arm64" "$APP/Frameworks/$NAME.framework/$NAME"
+            fi
+            rm -rf "$APP/Frameworks/$NAME.framework/_CodeSignature"
+            ls -lh "$APP/Frameworks/$NAME.framework/$NAME"
+          done
+          xcrun --sdk iphoneos swiftc \
+            -sdk "$SDK" \
+            -target arm64-apple-ios16.0 \
+            -swift-version 5 \
+            -parse-as-library \
+            -O \
+            -F "$SDK/System/Library/Frameworks" \
+            -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
+            -F TRTCKit \
+            -o "$APP/CHRIS" \
+            Sources/*.swift \
+            -framework SwiftUI -framework UIKit -framework Foundation \
+            -framework LocalAuthentication -framework AVFoundation \
+            -framework WebRTC \
+            -framework TXLiteAVSDK_TRTC \
+            -framework AudioToolbox -framework CoreTelephony -framework CoreMedia \
+            -framework MediaPlayer \
+            -framework CoreVideo -framework VideoToolbox -framework MetalKit -framework Metal \
+            -framework Accelerate -framework SystemConfiguration -framework ReplayKit \
+            -framework CoreGraphics -framework QuartzCore -framework OpenGLES \
+            -lz -lsqlite3 -lc++ \
+            -Xlinker -rpath -Xlinker @executable_path/Frameworks 2>&1 | tee /tmp/build.log
+          if grep -q "error:" /tmp/build.log; then
+            grep -E "error:" /tmp/build.log | head -40 > build-error.txt
+            echo "==== 编译错误（已存成 artifact）===="
+            cat build-error.txt
+            exit 1
+          fi
+          echo "编译完成，体积："
+          ls -lh "$APP/CHRIS"
+          echo "依赖了哪些动态库："
+          otool -L "$APP/CHRIS" | head -12
+          # 自检：App 和它嵌进去的每个动态库，引用的 @rpath 库必须在包里找得到，
+          # 否则装到手机上就是「一启动就闪退」（dyld: Library not loaded）。
+          echo "=== 动态库自检 ==="
+          MISSING=0
+          for BIN in "$APP/CHRIS" "$APP"/Frameworks/*.framework/*; do
+            [ -f "$BIN" ] || continue
+            otool -L "$BIN" | tail -n +2 | awk '{print $1}' | grep '^@rpath/' | while read -r DEP; do
+              NAME="$(basename "$DEP")"
+              if ! ls "$APP"/Frameworks/*/"$NAME" >/dev/null 2>&1; then
+                echo "缺少动态库: $DEP（被 $(basename "$BIN") 依赖）"
+                exit 1
+              fi
+            done || MISSING=1
+          done
+          if [ "$MISSING" != "0" ]; then echo "自检没通过：包里的动态库不全"; exit 1; fi
+          echo "自检通过：包里所有 @rpath 依赖都在"
+
+          # 瘦身：① 头文件/模块映射只有编译时才用，运行时不需要；
+          #       ② 剥掉符号表（保留动态符号），主程序能从 26MB 掉一大截。
+          # 目标：下载更快（用户反馈"包太大、下得慢"）。
+          for NAME in WebRTC TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+            rm -rf "$APP/Frameworks/$NAME.framework/Headers" \
+                   "$APP/Frameworks/$NAME.framework/Modules" \
+                   "$APP/Frameworks/$NAME.framework/PrivateHeaders"
+          done
+          strip -x "$APP/CHRIS" || true
+          for NAME in WebRTC TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+            [ -f "$APP/Frameworks/$NAME.framework/$NAME" ] && strip -x "$APP/Frameworks/$NAME.framework/$NAME" || true
+          done
+          echo "瘦身后："
+          ls -lh "$APP/CHRIS"
+          du -sh "$APP"
+          # 包内**每个文件的时间戳**要按北京时间写。
+          # ⚠ runner 是 UTC：zip 存的是"不带时区的本地时间"，手机 / 爱思助手按本地时区显示，
+          #   不处理就会比北京时间少 8 小时（用户反馈的「新包时间还是不对」就是这个）。
+          #   做法：拿北京墙上时间当"本地时间"写进去（不要在 touch 前面加 TZ）。
+          BJ_STAMP="$(TZ=Asia/Shanghai date '+%Y%m%d%H%M.%S')"
+          echo "包内时间戳 -> $BJ_STAMP（北京时间）"
+          find Payload -exec touch -t "$BJ_STAMP" {} +
+          zip -qry CHRISChat-unsigned.ipa Payload
+          ls -lh CHRISChat-unsigned.ipa
+          # 安装包加密：仓库是私有的，产物再加一层 AES-256，光有链接也装不了
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in CHRISChat-unsigned.ipa -out Luchat.ipa.enc \
+            -pass pass:"$IPA_PASSWORD"
+          ls -lh Luchat.ipa.enc
+        env:
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD || 'Luchat@2026' }}
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        # 配额满了这步会失败，但**不能让它把整个 job 干停** ——
+        # 后面还有"发 Release"那条兜底（Release 不吃这个配额）。
+        continue-on-error: true
+        with:
+          name: CHRISChat-unsigned-ipa
+          path: Luchat.ipa.enc
+          if-no-files-found: error
+          # 只留 1 天：每个包 17MB，攒多了会把账号的产物存储配额占满
+          # （2026-10-09 就是这样：编译成功、上传产物被拒，连着 12 次白跑）
+          retention-days: 1
+
+      # 上面那条走的是 Actions「产物」存储 —— 2026-10-09 账号配额被打满，
+      # GitHub 说 6~12 小时才重算，那段时间里编译成功也传不上去。
+      # 所以同时**发一个 Release**：Release 走仓库存储，公开仓库不限量，不吃这个配额。
+      # 下载：仓库首页右侧 Releases（或 https://github.com/<owner>/<repo>/releases）
+      - name: 发布到 Release（不吃 Actions 产物配额）
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="ipa-$(date -u +%Y%m%d-%H%M%S)"
+          TITLE="iOS 包 $(git log -1 --pretty=%s | cut -c1-60)"
+          gh release create "$TAG" Luchat.ipa.enc \
+            --title "$TITLE" \
+            --notes "自动出包（commit $(git rev-parse --short HEAD)）。文件是加密的 Luchat.ipa.enc，解密见 README / 怎么出包.md。" \
+            --repo "$GITHUB_REPOSITORY"
+          # 只保留最近 3 个 Release，老的删掉，免得越攒越多
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName -q '.[].tagName' \
+            | tail -n +4 | while read -r t; do gh release delete "$t" --yes --repo "$GITHUB_REPOSITORY" || true; done
+
+      # 编译失败时，把错误信息存成 artifact，方便在电脑上排查
+      - name: 上传编译错误
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-error
+          path: build-error.txt
+          if-no-files-found: ignore
+          retention-days: 3

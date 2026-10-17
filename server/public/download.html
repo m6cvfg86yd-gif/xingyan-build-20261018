@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Luchat · App Store 风格下载</title>
+<meta name="theme-color" content="#ffffff">
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f2f2f7; --ink:#1c1c1e; --sub:#8e8e93; --line:#e5e5ea;
+    --blue:#007AFF; --green:#07C160; --card:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#000;--bg2:#1c1c1e;--ink:#f2f2f7;--sub:#8e8e93;--line:#2c2c2e;--card:#1c1c1e}
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif}
+  .page{max-width:980px;margin:0 auto;padding:0 20px 60px}
+
+  /* ---------- 顶部：图标 + 名称 + 获取（App Store 那一条） ---------- */
+  .head{display:flex;gap:22px;align-items:flex-start;padding:40px 0 22px;border-bottom:1px solid var(--line)}
+  .appicon{width:128px;height:128px;border-radius:30px;overflow:hidden;flex:none;
+    box-shadow:0 10px 26px rgba(0,0,0,.18);border:1px solid rgba(0,0,0,.06)}
+  .appicon img{width:100%;height:100%;display:block}
+  .head .mid{flex:1;min-width:0}
+  h1{margin:2px 0 2px;font-size:30px;font-weight:700;letter-spacing:-.4px}
+  .dev{color:var(--blue);font-size:15px;font-weight:500}
+  .cat{color:var(--sub);font-size:13.5px;margin-top:2px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--sub);background:var(--bg2)}
+  .get{display:flex;flex-direction:column;align-items:center;gap:14px;flex:none;padding-top:36px}
+  a.getbtn{display:inline-flex;align-items:center;justify-content:center;min-width:104px;height:36px;padding:0 18px;
+    border-radius:18px;background:var(--blue);color:#fff;font-size:15px;font-weight:600;text-decoration:none;transition:.15s}
+  a.getbtn:hover{filter:brightness(1.06)}
+  a.getbtn.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+  @media(max-width:720px){
+    .head{flex-wrap:wrap;gap:16px}
+    .appicon{width:96px;height:96px;border-radius:22px}
+    h1{font-size:24px}
+    .get{flex-direction:row;padding-top:0;width:100%}
+  }
+
+  /* ---------- 截图横滑 ---------- */
+  .shots{display:flex;gap:16px;overflow-x:auto;padding:24px 2px 6px;scroll-snap-type:x mandatory}
+  .shots::-webkit-scrollbar{height:8px}
+  .shots::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  .shots img{height:520px;width:auto;border-radius:20px;border:1px solid var(--line);
+    scroll-snap-align:start;box-shadow:0 8px 24px rgba(0,0,0,.10);background:var(--bg2)}
+  @media(max-width:720px){.shots img{height:400px}}
+
+  /* ---------- 最新动态 ---------- */
+  .sec{border-top:1px solid var(--line);padding:22px 0}
+  .sec h2{font-size:20px;margin:0 0 8px;font-weight:700}
+  .ver{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .ver .n{color:var(--sub);font-size:13.5px}
+  .sec p{margin:6px 0;color:var(--ink);opacity:.86}
+  ul.news{margin:8px 0 0 0;padding-left:20px;color:var(--ink);opacity:.86}
+  ul.news li{margin:4px 0}
+
+  /* ---------- 信息表（App Store 底部那几行） ---------- */
+  .info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;
+    border-top:1px solid var(--line)}
+  .rowi{display:flex;justify-content:space-between;gap:14px;padding:14px 2px;border-bottom:1px solid var(--line)}
+  .rowi .k{color:var(--sub);font-size:14px}
+  .rowi .v{font-size:14px;text-align:right}
+
+  /* ---------- 说明卡片（安装方式） ---------- */
+  .card{background:var(--bg2);border-radius:16px;padding:18px;margin-top:14px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .card p{margin:4px 0;color:var(--ink);opacity:.8;font-size:14px}
+  .card a{color:var(--blue);text-decoration:none}
+  .qr{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .qr img{width:168px;height:168px;background:#fff;border-radius:14px;padding:8px;border:1px solid var(--line)}
+  .ok{color:var(--green);font-weight:600}
+  .foot{color:var(--sub);font-size:13px;text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 顶部 -->
+  <div class="head">
+    <div class="appicon"><img src="Luchat-icon.png" alt="Luchat"></div>
+    <div class="mid">
+      <h1>Luchat</h1>
+      <div class="dev">Luchat 自建通讯</div>
+      <div class="cat">社交 · 即时通讯</div>
+      <div class="chips">
+        <span class="chip">免费</span>
+        <span class="chip">1:1 与群聊</span>
+        <span class="chip">语音 · 视频通话</span>
+        <span class="chip">朋友圈 · 视频号</span>
+        <span class="chip">AI 助手</span>
+      </div>
+    </div>
+    <div class="get">
+      <a class="getbtn" href="/">打开使用</a>
+      <a class="getbtn ghost" href="/download" download>下载 ipa</a>
+    </div>
+  </div>
+
+  <!-- 截图 -->
+  <div class="shots">
+    <img src="shot-login.png" alt="登录">
+    <img src="shot-chats.png" alt="会话">
+    <img src="shot-contacts.png" alt="通讯录">
+    <img src="shot-discover.png" alt="发现">
+    <img src="shot-me.png" alt="我">
+  </div>
+
+  <!-- 最新动态 -->
+  <div class="sec">
+    <h2>最新动态</h2>
+    <div class="ver">
+      <div><b>版本 1.0</b></div>
+      <div class="n">今天</div>
+    </div>
+    <ul class="news">
+      <li>聊天：文字 / 图片 / 语音 / 文件 / 位置 / 红包 / 转账，支持引用、转发、多选、撤回</li>
+      <li>通话：一对一语音与视频通话（跨网络走服务器中继，更稳）</li>
+      <li>朋友圈：图文动态、点赞评论、权限设置</li>
+      <li>视频号：竖屏刷视频，可自己发布作品</li>
+      <li>AI 助手：聊天、办事、点外卖、查账单，一句话搞定</li>
+      <li>安全：手势锁、支付密码、实名认证、安全分</li>
+    </ul>
+  </div>
+
+  <!-- 描述 -->
+  <div class="sec">
+    <h2>关于</h2>
+    <p>Luchat 是一套自建的即时通讯应用：账号、聊天记录、朋友圈、账单全部保存在你自己的服务器上，不经过任何第三方平台。</p>
+    <p>手机上用浏览器打开即可使用，也可以安装 iOS 版 App。支持语音视频通话、朋友圈、视频号、AI 助手、安全锁等完整功能。</p>
+  </div>
+
+  <!-- 安装方式 -->
+  <div class="sec">
+    <h2>怎么开始</h2>
+    <div class="card">
+      <h3>① 手机浏览器直接用 <span class="ok">（推荐先这样）</span></h3>
+      <p>不用安装、不用签名。扫下面的码，或直接打开 <a href="/">https://aa.x8iu.com</a>，可以"添加到主屏幕"，点开和 App 一样。</p>
+      <div class="qr">
+        <img src="Luchat-qr.png" alt="扫码打开">
+        <div>
+          <p>扫码立即开始 · 支持 iOS / Android 浏览器</p>
+          <p><a href="/">打开网页版 →</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>② iPhone 安装 App（.ipa）</h3>
+      <p>苹果不允许安装未签名的应用，两种方式二选一：</p>
+      <p><b>爱思助手（免费）</b>：电脑装爱思助手 → 连上 iPhone → 「应用游戏 → 导入安装」选下载好的 ipa → 用自己的 Apple&nbsp;ID 自签。<span class="ok">7 天有效</span></p>
+      <p><b>TestFlight（正式）</b>：开通后点邀请链接一键安装，90 天有效。<span class="ok">推荐</span></p>
+      <p><a href="/download" download>下载 Luchat.ipa →</a></p>
+    </div>
+    <div class="card">
+      <h3>③ Android</h3>
+      <p>安卓客户端还在开发中，暂时请用上面的网页版。</p>
+    </div>
+  </div>
+
+  <!-- 信息表 -->
+  <div class="sec" style="padding-bottom:0">
+    <h2>信息</h2>
+  </div>
+  <div class="info">
+    <div class="rowi"><span class="k">提供者</span><span class="v">Luchat 自建通讯</span></div>
+    <div class="rowi"><span class="k">大小</span><span class="v">10.0 MB</span></div>
+    <div class="rowi"><span class="k">类别</span><span class="v">社交</span></div>
+    <div class="rowi"><span class="k">兼容性</span><span class="v">iOS 16.0 及以上 · 浏览器全平台</span></div>
+    <div class="rowi"><span class="k">语言</span><span class="v">简体中文 / English</span></div>
+    <div class="rowi"><span class="k">价格</span><span class="v">免费</span></div>
+    <div class="rowi"><span class="k">服务器</span><span class="v">aa.x8iu.com（自建）</span></div>
+    <div class="rowi"><span class="k">下载页</span><span class="v">aa.x8iu.com/download.html</span></div>
+  </div>
+
+  <div class="foot">© Luchat · 数据保存在你自己的服务器上</div>
+</div>
+</body>
+</html>

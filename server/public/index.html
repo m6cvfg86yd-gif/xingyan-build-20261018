@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<script>
+/* 手机打开时自动切到微信风格的手机版页面（电脑版加 ?desktop=1 可强制不跳） */
+(function () {
+  try {
+    var ua = navigator.userAgent || '';
+    var isPhone = /Android|iPhone|iPod|Mobile|HarmonyOS/i.test(ua) ||
+      (/iPad/.test(ua) || (window.innerWidth <= 640 && 'ontouchstart' in window));
+    if (isPhone && location.search.indexOf('desktop=1') < 0) location.replace('/m.html');
+  } catch (e) { }
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>&#8205;</title>
+<meta name="description" content="CHRIS Chat · 可以实时互相聊天的即时通讯">
+<link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+<link rel="stylesheet" href="styles.css">
+<!-- 主题初始化：在任何内容渲染前应用，避免闪白 -->
+<script>
+(function () {
+  try {
+    var m = localStorage.getItem('chris-theme') || 'light';
+    var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var t = m === 'system' ? (sysDark ? 'dark' : 'light') : m;
+    if (!m) t = 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.style.colorScheme = t;
+  } catch (e) {}
+})();
+</script>
+
+</head>
+<body>
+
+<!-- ===================================================== 登录 / 注册 -->
+<div class="auth" id="authScreen">
+      <button type="button" id="appCloseBtn" title="关闭" aria-label="关闭">×</button>
+  <div class="auth-card">
+    <aside class="auth-brand">
+      <div class="auth-brand-logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+      </div>
+      <div class="auth-brand-name" id="authBrandName">CHRIS Chat</div>
+      <div class="auth-brand-tip">和朋友聊天、刷朋友圈、打语音电话</div>
+    </aside>
+    <div class="auth-form-side">
+    <div class="auth-logo" id="authLogo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+    </div>
+    <div class="auth-app-logo" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="54" height="54">
+          <rect x="0" y="0" width="40" height="40" rx="10" fill="#07C160"/>
+          <ellipse cx="16.5" cy="16.5" rx="9" ry="7.6" fill="#FFFFFF"/>
+          <ellipse cx="25" cy="23.5" rx="7.6" ry="6.6" fill="#FFFFFF"/>
+          <circle cx="13.6" cy="15.2" r="1.5" fill="#07C160"/>
+          <circle cx="19.4" cy="15.2" r="1.5" fill="#07C160"/>
+          <circle cx="22.6" cy="22.6" r="1.3" fill="#07C160"/>
+          <circle cx="27.4" cy="22.6" r="1.3" fill="#07C160"/>
+        </svg>
+      </div>
+      <h1 class="auth-title" id="authTitle">CHRIS Chat</h1>
+    <p class="auth-sub" id="authSub">登录后开始聊天</p>
+    <p class="auth-notice" id="authNotice" hidden></p>
+
+    <div class="auth-accounts" id="authAccounts" hidden></div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab is-active" data-auth-tab="login">登录</button>
+      <button class="auth-tab" data-auth-tab="register">注册</button>
+    </div>
+
+    <form id="authForm" novalidate>
+      <label class="field">
+        <span class="field-label">用户名（用来登录）</span>
+        <span class="auth-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.6" r="3.6"/><path d="M4.8 19.6a7.2 7.2 0 0 1 14.4 0"/></svg>
+          <input id="authUsername" type="text" autocomplete="username" placeholder="用户名 / 账号">
+        </span>
+      </label>
+      <label class="field" id="nicknameField" hidden>
+        <span class="field-label">昵称</span>
+        <span class="auth-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.6 9.7l5.8-.8z"/></svg>
+          <input id="authNickname" type="text" maxlength="24" placeholder="昵称（别人看到的名字）">
+        </span>
+      </label>
+      <div class="field" id="genderField" hidden>
+        <span class="field-label">性别</span>
+        <div class="gender-picker" id="authGender">
+          <button type="button" class="gender-btn" data-gender="male">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.6 2.5h5.9v5.9h-2.2V6.4l-4 4a5.9 5.9 0 1 1-1.6-1.6l4-4h-2.1V2.5zM9.9 9.5a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4z"/></svg>
+            <span>男</span>
+          </button>
+          <button type="button" class="gender-btn" data-gender="female">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.4a6 6 0 0 1 2.4 11.5v1.7h2.3v2.2h-2.3v2.3h-2.2v-2.3H9.9v-2.2h2.3v-1.8A6 6 0 0 1 12 2.4zm0 2.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6z"/></svg>
+            <span>女</span>
+          </button>
+        </div>
+      </div>
+      <label class="field" id="phoneField" hidden>
+        <span class="field-label">手机号码（选填，本应用不发短信）</span>
+        <span class="auth-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="2.8" width="11.2" height="18.4" rx="2.6"/><path d="M10.6 5.8h2.8"/><circle cx="12" cy="17.6" r="0.9" fill="currentColor" stroke="none"/></svg>
+          <input id="authPhone" type="tel" maxlength="20" autocomplete="tel" placeholder="手机号（可不填）">
+        </span>
+      </label>
+      <label class="field" id="captchaField" hidden>
+        <span class="field-label">验证码</span>
+        <span class="auth-input auth-captcha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.4l7.4 3.9v6.2c0 4-3 7-7.4 8.2-4.4-1.2-7.4-4.2-7.4-8.2V7.3z"/><path d="M9 12.2l2.2 2.2 4-4.2"/></svg>
+          <input id="authCaptcha" type="text" maxlength="4" autocomplete="off" placeholder="验证码">
+          <span class="auth-captcha-img" id="authCaptchaImg" title="点击换一张"></span>
+        </span>
+      </label>
+      <p class="auth-field-hint" id="pwHint" hidden>6 位以上，建议字母 + 数字组合</p>
+      <label class="field">
+        <span class="field-label">密码</span>
+        <span class="auth-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4"/><path d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6"/></svg>
+          <input id="authPassword" type="password" autocomplete="current-password" placeholder="密码">
+          <button type="button" class="auth-eye" id="authEyeBtn" title="显示密码"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 12S6 5.8 12 5.8 21.4 12 21.4 12 18 18.2 12 18.2 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="2.9"/></svg></button>
+        </span>
+      </label>
+      <div class="auth-options">
+        <label class="auth-check"><input type="checkbox" id="authRemember" checked><span>记住密码</span></label>
+        <label class="auth-check"><input type="checkbox" id="authAuto"><span>自动登录</span></label>
+        <button type="button" class="auth-forgot" id="authForgot">忘记密码？</button>
+      </div>
+      <p class="form-error" id="authError" hidden></p>
+      <button type="submit" class="btn-primary btn-block" id="authSubmit">登录</button>
+      <label class="auth-agree" id="authAgreeRow" hidden>
+        <input type="checkbox" id="authAgree"><span>我已阅读并同意 <b data-doc="terms">《服务协议》</b> 和 <b data-doc="privacy">《隐私政策》</b></span>
+      </label>
+      <p class="auth-foot" id="authFoot">还没有账号？点上面的「注册」创建一个</p>
+      <p class="auth-pair-entry"><button type="button" id="authPairOpen">用其他设备登录</button></p>
+      </form>
+
+      <div class="auth-pair" id="authPair" hidden>
+        <p class="auth-pair-tip">在<b>已经登录</b>的手机或另一台电脑上打开下面的链接并确认，这台设备就直接登录了</p>
+        <div class="auth-pair-code" id="authPairCode">------</div>
+        <p class="auth-pair-url" id="authPairUrl">—</p>
+        <p class="auth-pair-status" id="authPairStatus">等待对方确认…</p>
+        <div class="auth-pair-actions">
+          <button type="button" class="btn-ghost" id="authPairCopy">复制链接</button>
+          <button type="button" class="btn-ghost" id="authPairBack">返回登录</button>
+        </div>
+      </div>
+    <p class="auth-hint">同一局域网内的其他人访问你这个地址，就能注册账号和你聊天。想试双人对话，可以再开一个浏览器无痕窗口注册第二个账号。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 登录后的加载动画（至少显示 2 秒） -->
+<div class="boot-loader" id="bootLoader" hidden>
+  <div class="boot-box">
+    <div class="boot-ring">
+      <div class="boot-face">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+      </div>
+    </div>
+    <div class="boot-name" id="bootName">CHRIS Chat</div>
+    <div class="boot-dots"><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<!-- ============================================================= 主界面 -->
+<div class="app" id="appScreen" hidden>
+
+  <!-- 通话浮层：放在最外层，对方没打开会话也能看到来电 -->
+  <div class="call-layer" id="callLayer" hidden>
+      <div class="call-card" id="callCard">
+        <video class="call-remote-video" id="callRemoteVideo" autoplay playsinline></video>
+        <video class="call-local-video" id="callLocalVideo" autoplay playsinline muted></video>
+        <div class="call-peer-avatar" id="callPeerAvatar"></div>
+        <div class="call-avatar" id="callAvatar">?</div>
+        <div class="call-name" id="callName">—</div>
+        <div class="call-status" id="callStatus">正在呼叫…</div>
+        <div class="call-timer" id="callTimer" hidden>00:00</div>
+        <div class="call-stage" id="callStage" hidden>
+          <span class="call-dot"></span><span class="call-stage-text" id="callStageText">连接中…</span>
+        </div>
+        <div class="call-actions" id="callActions">
+          <button type="button" class="call-act cam" id="callCamBtn" title="关闭摄像头" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="6.4" width="12.6" height="11.2" rx="3"/><path d="M15.2 11.3l5.2-3.1v7.6l-5.2-3.1z"/></svg></button>
+          <button type="button" class="call-act flip" id="callFlipBtn" title="切换摄像头" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.4A8 8 0 0 1 19.2 7"/><path d="M19.6 3.6V7.4H15.8"/><path d="M20 15.6A8 8 0 0 1 4.8 17"/><path d="M4.4 20.4V16.6H8.2"/></svg></button>
+          <button type="button" class="call-act mute" id="callMuteBtn" title="静音" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9.2" y="3.2" width="5.6" height="10.6" rx="2.8"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.8v3"/></svg></button>
+          <button type="button" class="call-act accept" id="callAcceptBtn" title="接听" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 16.9v2.7a1.9 1.9 0 0 1-2.1 1.9 18.9 18.9 0 0 1-8.2-2.9 18.6 18.6 0 0 1-5.7-5.7A18.9 18.9 0 0 1 2.5 4.6 1.9 1.9 0 0 1 4.4 2.5h2.7c.9 0 1.7.7 1.9 1.6.1.9.4 1.8.7 2.7.3.7.1 1.5-.5 2L8 9.9a15.2 15.2 0 0 0 5.7 5.7l1.1-1.2c.5-.6 1.3-.8 2-.5.9.3 1.8.6 2.7.7.9.2 1.6 1 1.6 1.9z"/></svg></button>
+          <button type="button" class="call-act hangup" id="callHangupBtn" title="挂断"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(135 12 12)"><path d="M21.4 16.9v2.7a1.9 1.9 0 0 1-2.1 1.9 18.9 18.9 0 0 1-8.2-2.9 18.6 18.6 0 0 1-5.7-5.7A18.9 18.9 0 0 1 2.5 4.6 1.9 1.9 0 0 1 4.4 2.5h2.7c.9 0 1.7.7 1.9 1.6.1.9.4 1.8.7 2.7.3.7.1 1.5-.5 2L8 9.9a15.2 15.2 0 0 0 5.7 5.7l1.1-1.2c.5-.6 1.3-.8 2-.5.9.3 1.8.6 2.7.7.9.2 1.6 1 1.6 1.9z"/></g></svg></button>
+        </div>
+        <audio id="callAudio" autoplay></audio>
+      </div>
+    </div>
+
+
+  <!-- 顶部蓝条（照设计图） -->
+  <header class="tb" id="topbar">
+    <div class="tb-chip">
+      <span class="tb-av" id="tbMyAv">C</span>
+      <span class="tb-name" id="tbMyName">—</span>
+    </div>
+    <div class="tb-spacer"></div>
+    <div class="tb-chip is-peer">
+      <span class="tb-av" id="tbPeerAv">·</span>
+      <span class="tb-name" id="tbPeerName">—</span>
+    </div>
+  </header>
+
+  <!-- 左侧竖栏（QQ 式） -->
+  <nav class="rail">
+    <div class="rail-logo" id="railLogo" title="CHRIS">C</div>
+
+    <button class="rail-me" id="meAvatarBtn" title="修改资料">
+      <img id="meAvatar" alt="">
+      <span class="rail-fallback" id="meAvatarFallback">?</span>
+      <i class="rail-online"></i>
+    </button>
+
+    <div class="rail-nav">
+      <button class="rail-item side-tab is-active" data-panel="chats" title="消息">
+        <span class="qq-ico is-normal"><svg viewBox="0 0 24 24" fill="none"><path d="M7.49526 17.8896L13.9329 20.9077C14.5368 21.1908 15.1686 20.7497 15.2254 20.1654C15.2387 20.0279 15.1621 19.7368 15.1621 19.7368V19.7368C14.9143 19.0616 15.3509 18.3317 16.0263 18.0845C18.9229 17.0243 21 14.1453 21 10.7599C21 6.47421 17.6713 3 13.5652 3H10.4348C6.32867 3 3 6.47421 3 10.7599C3 13.5914 4.45303 16.0687 6.62331 17.4238M7.49526 17.8896L6.62331 17.4238M7.49526 17.8896C7.44519 17.8671 7.3954 17.844 7.3459 17.8204C7.22097 17.7607 7.0979 17.6976 6.9768 17.6311L6.9665 17.6254L6.96537 17.6248C6.8495 17.5609 6.73545 17.4938 6.62331 17.4238" stroke="currentColor" stroke-width="1.5"></path></svg></span><span class="qq-ico is-on"><svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.51349 17.8599L6.49901 17.8528L6.48476 17.8453C3.81969 16.4372 2 13.6356 2 10.4074C2 5.76412 5.76412 2 10.4074 2L13.667 2.00001C18.3001 2.00001 22.1154 5.735 22.1154 10.3884C22.1154 14.3058 19.2341 17.5305 15.6654 18.4941L15.9412 20.2061L15.9418 20.2098C15.9546 20.2908 15.9716 20.4093 15.9739 20.5308C15.9756 20.6167 15.9795 20.899 15.8068 21.1758C15.7047 21.3394 15.5508 21.485 15.3479 21.5751C15.1564 21.6602 14.9765 21.6715 14.8478 21.6636C14.6207 21.6497 14.4332 21.5676 14.3358 21.5213L7.06466 18.1236C6.9945 18.0922 6.85411 18.0246 6.75361 17.9761C6.69119 17.946 6.63122 17.917 6.58693 17.8955L6.51349 17.8599Z" fill="currentColor"></path><path d="M8.93346 11.1716C9.60002 11.1716 10.1404 10.6313 10.1404 9.96471C10.1404 9.29816 9.60002 8.75781 8.93346 8.75781C8.26691 8.75781 7.72656 9.29816 7.72656 9.96471C7.72656 10.6313 8.26691 11.1716 8.93346 11.1716Z" fill="white"></path><path d="M15.2147 11.1716C15.8813 11.1716 16.4216 10.6313 16.4216 9.96471C16.4216 9.29816 15.8813 8.75781 15.2147 8.75781C14.5482 8.75781 14.0078 9.29816 14.0078 9.96471C14.0078 10.6313 14.5482 11.1716 15.2147 11.1716Z" fill="white"></path></svg></span>
+        <span class="rail-text">聊天</span>
+        <em class="tab-badge rail-badge" id="chatBadge" hidden>0</em>
+      </button>
+      <button class="rail-item side-tab" data-panel="contacts" title="联系人">
+        <span class="qq-ico is-normal"><svg viewBox="0 0 24 24" fill="none"><path d="M12 11.25C14.3472 11.25 16.25 9.34721 16.25 7C16.25 4.65279 14.3472 2.75 12 2.75H8.04568C7.91151 2.75 8.07822 2.91718 8.15063 3.03013C8.37704 3.38333 8.85789 4.03137 8.42856 4.6953C7.99923 5.35924 7.75 6.15051 7.75 7C7.75 9.34721 9.65279 11.25 12 11.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path><path d="M4.33333 20.25C4.01117 20.25 3.75 19.9888 3.75 19.6667C3.75 16.399 6.39898 13.75 9.66667 13.75H14.3333C17.601 13.75 20.25 16.399 20.25 19.6667C20.25 19.9888 19.9888 20.25 19.6667 20.25H4.33333Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path></svg></span><span class="qq-ico is-on"><svg viewBox="0 0 24 24" fill="none"><path d="M12 11.25C14.3472 11.25 16.25 9.34721 16.25 7C16.25 4.65279 14.3472 2.75 12 2.75H8.04568C7.91151 2.75 8.07822 2.91718 8.15063 3.03013C8.37704 3.38333 8.85789 4.03137 8.42856 4.6953C7.99923 5.35924 7.75 6.15051 7.75 7C7.75 9.34721 9.65279 11.25 12 11.25Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path><path d="M4.33333 20.25C4.01117 20.25 3.75 19.9888 3.75 19.6667C3.75 16.399 6.39898 13.75 9.66667 13.75H14.3333C17.601 13.75 20.25 16.399 20.25 19.6667C20.25 19.9888 19.9888 20.25 19.6667 20.25H4.33333Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"></path></svg></span>
+        <span class="rail-text">通讯录</span>
+        <em class="tab-badge rail-badge" id="contactBadge" hidden>0</em>
+      </button>
+      <button class="rail-item side-tab" data-panel="groups" title="群聊">
+        <span class="qq-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M10.2383 13C11.53 13.0001 12.7166 13.4558 13.6543 14.2168C14.2953 13.7879 15.0617 13.5381 15.8857 13.5381H17.9238C20.1753 13.5381 22.0008 15.3996 22.001 17.6953C22.0009 18.2333 21.5998 18.6763 21.0859 18.7295L20.9814 18.7354H15.7236C15.6612 19.3979 15.1458 19.9261 14.4971 19.9932L14.3574 20H3.37305L3.23242 19.9932C2.54015 19.9214 2 19.3244 2 18.5996C2.00021 15.507 4.45917 13 7.49219 13H10.2383ZM7.49219 14.5C5.34665 14.5 3.55383 16.2556 3.50195 18.5H14.2275C14.1757 16.2557 12.3837 14.5002 10.2383 14.5H7.49219ZM15.8857 15.0381C15.4613 15.0381 15.058 15.1468 14.7012 15.3389C15.0976 15.9021 15.3944 16.5429 15.5645 17.2354H20.46C20.2468 15.9689 19.1725 15.0381 17.9238 15.0381H15.8857ZM17.0547 6.86133C18.5933 6.94088 19.8174 8.23847 19.8174 9.82715L19.8135 9.97949C19.7354 11.5482 18.4631 12.7956 16.9053 12.7959C15.3473 12.7959 14.0741 11.5484 13.9961 9.97949L13.9932 9.82715C13.9932 8.1872 15.297 6.85742 16.9053 6.85742L17.0547 6.86133ZM9.06641 4.00488C11.1393 4.11178 12.7881 5.85974 12.7881 8L12.7832 8.20605C12.678 10.3194 10.9639 11.9999 8.86523 12C6.76648 12 5.05244 10.3194 4.94727 8.20605L4.94238 8C4.94238 5.79086 6.69871 4 8.86523 4L9.06641 4.00488ZM16.9053 8.35742C16.1528 8.35742 15.4932 8.98795 15.4932 9.82715C15.4935 10.6661 16.153 11.2959 16.9053 11.2959C17.6574 11.2956 18.3171 10.6659 18.3174 9.82715C18.3174 8.98813 17.6576 8.35769 16.9053 8.35742ZM8.86523 5.5C7.55454 5.5 6.44238 6.59161 6.44238 8C6.44238 9.40839 7.55454 10.5 8.86523 10.5C10.1758 10.4999 11.2881 9.4083 11.2881 8C11.2881 6.5917 10.1758 5.50014 8.86523 5.5Z" fill="currentColor"></path></svg></span>
+        <span class="rail-text">群聊</span>
+      </button>
+      <button class="rail-item side-tab" data-panel="moments" title="朋友圈">
+        <span class="qq-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M9.65625 3.29688C10.6039 1.55996 13.0984 1.55978 14.0459 3.29688L16.1094 7.08105L20.3447 7.87402C22.2895 8.23853 23.0604 10.6109 21.7012 12.0488L18.7412 15.1807L19.2959 19.4541C19.5504 21.4164 17.5317 22.8824 15.7441 22.0342L11.8506 20.1865L7.95801 22.0342C6.17029 22.8828 4.15165 21.4165 4.40625 19.4541L4.96094 15.1807L2 12.0488C0.64054 10.6109 1.41145 8.23837 3.35645 7.87402L7.59277 7.08105L9.65625 3.29688ZM12.7285 4.01562C12.3495 3.32071 11.3517 3.32078 10.9727 4.01562L8.90918 7.79883L8.56836 8.42383L7.86914 8.55469L3.63281 9.34863C2.85477 9.49433 2.54603 10.4434 3.08984 11.0186L6.05078 14.1494L6.54004 14.667L6.44824 15.373L5.89355 19.6475C5.79195 20.4323 6.59947 21.019 7.31445 20.6797L11.208 18.8311L11.8506 18.5254L12.4941 18.8311L16.3877 20.6797C17.1025 21.0183 17.9092 20.432 17.8076 19.6475L17.2529 15.373L17.2148 15.0771C15.5388 15.6169 12.7253 16.228 9.41309 16.1143C8.91973 16.0973 8.42846 16.0424 8.15332 15.9922C7.85795 15.9383 7.81072 15.6182 7.99121 15.4658C9.1378 14.4982 12.9512 11.7577 13.0107 11.7109C13.0802 11.6563 13.0837 11.5769 13.0205 11.5225C12.932 11.4464 10.8467 10.7075 7.6543 11.1982C7.43635 11.2316 7.30847 10.9329 7.52148 10.8193C8.42095 10.3412 10.4715 9.75061 12.5586 9.76758C14.0171 9.77956 15.2779 10.2185 15.6348 10.4834C15.8204 10.6215 15.7799 10.7917 15.627 10.9219C14.8415 11.59 12.6139 13.1426 11.8359 13.7422C11.7449 13.8127 11.7788 13.9209 11.8779 13.959C13.0616 14.4137 14.7671 14.5913 16.1201 14.6348C16.5115 14.6473 16.8733 14.648 17.1846 14.6416L17.6504 14.1494L20.6113 11.0186C21.1548 10.4435 20.8467 9.4948 20.0693 9.34863L15.833 8.55469L15.1328 8.42383L14.792 7.79883L12.7285 4.01562Z" fill="currentColor"></path></svg></span>
+        <span class="rail-text">朋友圈</span>
+        <em class="tab-badge rail-badge" id="momentBadge" hidden>0</em>
+      </button>
+    </div>
+
+    <div class="rail-spacer"></div>
+
+    <div class="me-menu-wrap">
+      <button class="rail-item" id="meMenuBtn" title="更多" aria-haspopup="true" aria-expanded="false">
+        <span class="qq-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path d="M4 6H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path d="M4 18H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg></span>
+        <span class="rail-text">更多</span>
+      </button>
+      <div class="me-menu" id="meMenu" hidden>
+        <div class="me-menu-profile">
+          <div class="mmp-avatar" id="meMenuAvatar"></div>
+          <div class="mmp-info">
+            <div class="mmp-name" id="meMenuHead">—</div>
+            <div class="mmp-status"><span class="status-dot" id="meStatusDot"></span><span id="meStatusText">在线</span></div>
+          </div>
+        </div>
+        <div class="me-menu-group">
+          <div class="mmg-label">在线状态</div>
+          <div class="me-status-row" id="meStatusRow">
+            <button type="button" data-status="online"><i class="sd sd-online"></i>在线</button>
+            <button type="button" data-status="busy"><i class="sd sd-busy"></i>忙碌</button>
+            <button type="button" data-status="away"><i class="sd sd-away"></i>离开</button>
+            <button type="button" data-status="invisible"><i class="sd sd-invisible"></i>隐身</button>
+          </div>
+        </div>
+        <div class="me-menu-group">
+          <label class="me-switch"><input type="checkbox" id="meNotifyToggle"><span>新消息桌面通知</span></label>
+          <label class="me-switch"><input type="checkbox" id="meDndToggle"><span>免打扰</span></label>
+        </div>
+        <button data-menu="profile">个人资料</button>
+        <button data-menu="chatbg">聊天背景</button>
+        <button data-menu="settings">设置</button>
+        <button data-menu="about">关于</button>
+        <div class="me-version" id="meVersionRow">
+          <span id="meVersionText">版本检查中…</span>
+          <button type="button" id="meCheckUpdate">检查更新</button>
+        </div>
+        <button data-menu="security">安全中心</button>
+        <button data-menu="phone">手机访问</button>
+        <button data-menu="switch">切换账号</button>
+        <button data-menu="logout" class="danger">退出登录</button>
+        <div class="me-menu-theme">
+          <span class="mmt-label">外观</span>
+          <div class="theme-seg" id="themeSeg">
+            <button type="button" data-theme-opt="light" title="浅色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></svg></button>
+            <button type="button" data-theme-opt="dark" title="深色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20.6 14.4A8.7 8.7 0 0 1 9.6 3.4a8.7 8.7 0 1 0 11 11z"/></svg></button>
+            <button type="button" data-theme-opt="system" title="跟随系统"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 列表列 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="side-search">
+      <span class="side-search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="M15.6 15.6L20.4 20.4"/></svg>
+        <input id="sideSearch" type="search" placeholder="搜索">
+      </span>
+      <div class="side-plus-wrap">
+        <button class="side-plus" id="newChatBtn" title="发起聊天" aria-haspopup="true" aria-expanded="false">＋</button>
+        <div class="side-menu" id="newChatMenu" hidden>
+          <button type="button" data-new="chat">发起聊天</button>
+          <button type="button" data-new="friend">添加好友</button>
+          <button type="button" data-new="group">发起群聊</button>
+          <button type="button" data-new="face">面对面建群</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctx-menu" id="ctxMenu" hidden>
+      <button type="button" data-ctx="pin">置顶会话</button>
+      <button type="button" data-ctx="read">标为已读</button>
+      <button type="button" data-ctx="unread">标为未读</button>
+      <div class="ctx-sep"></div>
+      <button type="button" class="danger" data-ctx="del">删除会话</button>
+    </div>
+
+    <div class="side-body">
+      <div class="list" id="chatList"></div>
+      <div class="contacts-panel" id="contactsPanel" hidden>
+        <div class="list" id="friendList"></div>
+        <div class="list-section" id="requestSection" hidden>
+          <div class="list-title">新的朋友</div>
+          <div class="list" id="requestList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-foot">
+      <span class="status" id="connState"><i class="dot"></i><span id="connText">连接中…</span></span>
+      <span class="side-me" id="meName">—</span>
+    </div>
+  </aside>
+
+  <!-- 右侧主区 -->
+  <main class="main" id="main">
+    <div class="empty-chat" id="emptyChat">
+      <div class="empty-logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+      </div>
+      <p>选择左侧的会话开始聊天</p>
+    </div>
+
+    <div class="chat" id="chatPane" hidden>
+      <header class="chat-head">
+        <button class="icon-btn back-btn" id="backBtn" title="返回">‹</button>
+        <div class="chat-head-avatar" id="chatAvatar"></div>
+        <div class="chat-head-info">
+          <div class="chat-title" id="chatTitle">—</div>
+          <div class="chat-sub"><span class="status-dot" id="chatStatusDot"></span><span id="chatSubText"></span></div>
+        </div>
+        <div class="chat-head-actions">
+          <button class="head-btn call-btn" id="callBtn" title="语音通话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 16.9v2.7a1.9 1.9 0 0 1-2.1 1.9 18.9 18.9 0 0 1-8.2-2.9 18.6 18.6 0 0 1-5.7-5.7A18.9 18.9 0 0 1 2.5 4.6 1.9 1.9 0 0 1 4.4 2.5h2.7c.9 0 1.7.7 1.9 1.6.1.9.4 1.8.7 2.7.3.7.1 1.5-.5 2L8 9.9a15.2 15.2 0 0 0 5.7 5.7l1.1-1.2c.5-.6 1.3-.8 2-.5.9.3 1.8.6 2.7.7.9.2 1.6 1 1.6 1.9z"/></svg></button><button class="head-btn call-btn" id="videoCallBtn" title="视频通话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="6.4" width="12.6" height="11.2" rx="3"/><path d="M15.2 11.3l5.2-3.1v7.6l-5.2-3.1z"/></svg></button>
+          <button class="head-btn" id="headGroupBtn" title="发起群聊"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.4" cy="8.6" r="3.1"/><path d="M3.6 19.4a6 6 0 0 1 11.6 0"/><path d="M16.4 6.2a3 3 0 0 1 0 5.7"/><path d="M17.6 13.6a5.6 5.6 0 0 1 3.1 5"/></svg></button>
+          <button class="head-btn" id="headMoreBtn">⋯</button>
+        </div>
+      </header>
+
+      <div class="messages" id="messages"></div>
+      <div class="typing" id="typingHint" hidden></div>
+
+      <footer class="composer">
+        <div class="composer-card">
+        <textarea id="composerInput" rows="1" placeholder="输入消息…"></textarea>
+        <div class="voice-row" id="voiceRow" hidden>
+          <button type="button" class="voice-hold" id="voiceHoldBtn">按住 说话</button>
+          <button type="button" class="voice-file" id="voiceFileBtn" title="没有麦克风？选一个音频文件当语音发出去">选语音文件</button>
+          <input type="file" id="voiceFileInput" accept="audio/*" hidden>
+        </div>
+        <div class="composer-bar">
+          <div class="tools">
+            <button class="tool" id="emojiBtn" title="表情" aria-label="表情"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.6 14.4a4.4 4.4 0 0 0 6.8 0"/><circle cx="9" cy="9.9" r="0.95" fill="currentColor" stroke="none"/><circle cx="15" cy="9.9" r="0.95" fill="currentColor" stroke="none"/></svg></button>
+            <button class="tool" id="imageBtn" title="图片" aria-label="图片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.6" width="18" height="14.8" rx="2.6"/><circle cx="8.6" cy="9.6" r="1.5"/><path d="M4.2 17.8l4.5-4.3a2 2 0 0 1 2.7 0l4.8 4.5"/></svg></button>
+            <button class="tool" id="voiceBtn" title="语音" aria-label="语音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9.2" y="3.2" width="5.6" height="10.6" rx="2.8"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.8v3"/></svg></button>
+            <button class="tool" id="fileBtn" title="文件" aria-label="文件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.2 3.6H7.6A2.6 2.6 0 0 0 5 6.2v11.6a2.6 2.6 0 0 0 2.6 2.6h8.8a2.6 2.6 0 0 0 2.6-2.6V8.4l-4.8-4.8z"/><path d="M14 3.8V8.4h4.6"/></svg></button>
+            <button class="tool" id="shakeBtn" title="窗口抖动" aria-label="窗口抖动"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7.4" y="4.6" width="9.2" height="14.8" rx="2.2"/><path d="M4.2 9.2v5.6M2 10.8v2.4M19.8 9.2v5.6M22 10.8v2.4"/></svg></button>
+            <input type="file" id="imageInput" accept="image/*" hidden>
+            <input type="file" id="fileInput" hidden>
+          </div>
+          <div class="send-area">
+            <span class="enter-hint">Enter 发送</span>
+            <button type="button" class="voice-send-btn" id="voiceSendBtn" title="按住说话（也可以按住右 Alt）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px"><path d="M10.6 5.6 6.4 8.9H3.7a1 1 0 0 0-1 1v4.2a1 1 0 0 0 1 1h2.7l4.2 3.3z"/><path d="M15.2 8.7a5 5 0 0 1 0 6.6"/><path d="M18.4 5.6a9.2 9.2 0 0 1 0 12.8"/></svg></button>
+            <button class="btn-primary send-btn" id="sendBtn">发送</button>
+          </div>
+        </div>
+        </div>
+        <div class="emoji-panel" id="emojiPanel" hidden></div>
+    
+    <div class="voice-overlay" id="voiceOverlay" hidden>
+      <div class="voice-panel" id="voicePanel">
+        <div class="voice-mic" id="voiceMic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="9.2" y="3.2" width="5.6" height="10.6" rx="2.8"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.8v3"/></svg>
+        </div>
+        <div class="voice-levels" id="voiceLevels"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="voice-overlay-time" id="voiceOverlayTime">0:00</div>
+        <div class="voice-overlay-tip" id="voiceOverlayTip">松开发送，上滑取消</div>
+      </div>
+    </div>
+      </footer>
+    </div>
+
+    <!-- 朋友圈 -->
+    <div class="moments" id="momentsPane" hidden>
+      <div class="moments-cover">
+        <button class="moments-back" id="momentsBack" hidden>‹ 返回全部</button>
+        <div class="cover-actions">
+          <button class="cover-btn" id="coverBtn" title="更换封面">更换封面</button>
+          <button class="publish-fab" id="publishBtn" title="发表动态" aria-label="发表动态"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 8.2h3.1l1.5-2.4h7.9l1.5 2.4h3.2a1.8 1.8 0 0 1 1.8 1.8v8.1a1.8 1.8 0 0 1-1.8 1.8H3.4a1.8 1.8 0 0 1-1.8-1.8V10a1.8 1.8 0 0 1 1.8-1.8z"/><circle cx="12" cy="14" r="3.4"/></svg></button>
+          <div class="fab-menu" id="fabMenu" hidden>
+            <button type="button" data-fab="publish">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 8.2h3.1l1.5-2.4h7.9l1.5 2.4h3.2a1.8 1.8 0 0 1 1.8 1.8v8.1a1.8 1.8 0 0 1-1.8 1.8H3.4a1.8 1.8 0 0 1-1.8-1.8V10a1.8 1.8 0 0 1 1.8-1.8z"/><circle cx="12" cy="14" r="3.4"/></svg>
+              <span>发表动态</span>
+            </button>
+            <button type="button" data-fab="cover">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.6" width="18" height="14.8" rx="2.2"/><circle cx="8.4" cy="9.8" r="1.7"/><path d="M3.6 17.4l5.2-5 4 3.8 3-2.6 4.6 4.2"/></svg>
+              <span>更换背景图</span>
+            </button>
+          </div>
+        </div>
+        <div class="moments-profile">
+          <div class="moments-avatar" id="momentsAvatar"></div>
+          <div class="moments-name" id="momentsName">—</div>
+          <div class="moments-tag" id="momentsTag" hidden>的朋友圈</div>
+        </div>
+      </div>
+      <div class="moments-body">
+        <div class="moment-list" id="momentList"></div>
+        <p class="moments-empty" id="momentsEmpty" hidden>还没有动态。发一条，或者加几个好友看看他们在发什么。</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-mask" id="modalMask" hidden>
+  <div class="modal" id="modalCard">
+    <div class="modal-head">
+      <h3 id="modalTitle">标题</h3>
+      <button class="icon-btn" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js" charset="utf-8"></script>
+</body>
+</html>

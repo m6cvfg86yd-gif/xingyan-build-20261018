@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App 页面预览</title>
+<style>
+  :root{
+    --accent:#07C160; --accent2:#007AFF; --disabled:#B2E4C8; --gray:#C7C7CC;
+    --bg:#ffffff; --text:#000; --sub:#8E8E93; --gray6:#F2F2F7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0f14;color:#dfe7ef;font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:12px 10px 18px}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
+  .bar button{background:#1b2430;color:#cfe0ff;border:1px solid #2b3a4b;border-radius:8px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+  .bar button.on{background:#2f7fd8;color:#fff;border-color:#2f7fd8}
+  .bar .sep{width:1px;background:#2b3a4b;margin:2px 4px}
+  .phone{width:320px;border-radius:26px;border:1px solid #2a3542;overflow:hidden;background:var(--bg);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  .screen{min-height:580px;display:flex;flex-direction:column;background:var(--bg);color:var(--text)}
+  .nav{height:48px;display:flex;align-items:center;padding:0 12px;position:relative;border-bottom:.5px solid rgba(0,0,0,.06)}
+  .nav .t{position:absolute;left:0;right:0;text-align:center;font-size:16px;font-weight:600}
+  .nav svg{width:20px;height:20px;opacity:.85;position:relative;z-index:1}
+  .body{flex:1;padding:16px 20px;display:flex;flex-direction:column}
+  /* 登录首页 */
+  .loginBody{padding-top:34px}
+  .logo{width:80px;height:80px;border-radius:50%;background:var(--gray6);align-self:center;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .logo img{width:100%;height:100%;object-fit:cover}
+  .name{text-align:center;font-size:22px;font-weight:600;margin-top:16px}
+  .hello{text-align:center;font-size:14px;color:var(--sub);margin-top:20px}
+  .wechat{margin-top:48px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:8px;
+          color:#fff;font-size:16px;font-weight:500;background:var(--disabled)}
+  .wechat.on{background:var(--accent)}
+  .wechat svg{width:24px;height:24px;fill:#fff}
+  .ways{margin-top:24px;text-align:center;font-size:14px;color:#636366}
+  .ways .line{color:#c7c7cc;margin:0 6px}
+  .agree{margin-top:32px;display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--sub)}
+  .agree .box{width:16px;height:16px;border-radius:3px;border:1.4px solid var(--gray);margin-top:1px;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .agree .box.on{background:var(--accent);border-color:var(--accent)}
+  .agree .box.on i{width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);margin-top:-2px}
+  .agree a{color:var(--accent2);text-decoration:none}
+  .ver{margin-top:auto;text-align:center;font-size:11px;color:#AEAEB2;padding-top:40px}
+  /* 通用控件 */
+  .h1left{font-size:24px;font-weight:600;margin:14px 0 4px}
+  .field{background:var(--gray6);border-radius:12px;padding:16px;font-size:16px;color:var(--sub);margin-top:18px}
+  .row{display:flex;gap:12px;margin-top:18px}
+  .row .field{margin-top:0;flex:1}
+  .btncode{width:100px;height:52px;border-radius:12px;background:var(--accent2);color:#fff;font-size:14px;font-weight:500;
+           display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .bigbtn{margin-top:20px;height:52px;border-radius:16px;background:var(--accent2);color:#fff;font-weight:500;
+          display:flex;align-items:center;justify-content:center;font-size:16px}
+  .bigbtn.green{background:var(--accent)}
+  .card{background:var(--gray6);border-radius:16px;padding:20px;margin-top:16px}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;font-size:15px}
+  .kv .k{color:var(--sub)}
+  .kv.total{border-top:1px solid rgba(0,0,0,.1);margin-top:8px;padding-top:14px;font-weight:600}
+  .kv.total .v{color:var(--accent2);font-size:18px}
+  .pwdbox{display:flex;justify-content:center;gap:12px;margin-top:30px}
+  .pwdbox div{width:44px;height:48px;border:1px solid #d1d1d6;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .pwdbox i{width:10px;height:10px;border-radius:50%;background:var(--text)}
+  .center{text-align:center}
+  .ok{width:72px;height:72px;border-radius:50%;background:#34C759;display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .ok svg{width:44px;height:44px;fill:#fff}
+  .amount{font-size:28px;font-weight:600;text-align:center}
+  .muted{color:var(--sub);font-size:14px;text-align:center}
+  .dark .nav{border-bottom-color:rgba(255,255,255,.08)}
+  .dark .ways{color:#98989f}
+  .dark .agree .box.on{border-color:var(--accent)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="bar" id="tabs">
+  <button data-p="login" class="on">账号登录</button>
+  <button data-p="phone">手机号登录</button>
+  <span class="sep"></span>
+  <button data-p="t1">转账①填写</button>
+  <button data-p="t2">转账②确认</button>
+  <button data-p="t3">转账③密码</button>
+  <button data-p="t4">转账④成功</button>
+  <span class="sep"></span>
+  <button id="bLight" class="on">浅色</button>
+  <button id="bDark">深色</button>
+</div>
+
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="nav">
+      <div class="t" id="navTitle">账号登录</div>
+    </div>
+    <div class="body" id="pageBody"></div>
+  </div>
+</div>
+
+<script src="login-preview.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+struct StickerView: View {
+    @EnvironmentObject var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var picking = false
+    @State private var pending = ""
+    @State private var pendingImage = ""
+    @State private var packs: [StickerPack] = []
+    @State private var tab = -1
+
+    /// 当前这一页要显示的表情：-1 = 全部；否则是某一个表情包
+    private var list: [String] {
+        if tab >= 0 && tab < packs.count {
+            return packs[tab].stickers ?? []
+        }
+        var all: [String] = []
+        packs.forEach { all.append(contentsOf: $0.stickers ?? []) }
+        return all.isEmpty ? emojiAll : all
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavBar(title: Tr("表情"), back: { dismiss() })
+
+            // 表情包分类（网页版：全部 + 后台配的每个包）
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    tabButton(-1, "🙂", "全部")
+                    ForEach(packs.indices, id: \.self) { i in
+                        tabButton(i, packs[i].icon ?? "😀", packs[i].name ?? "表情包")
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 6), spacing: 6) {
+                    ForEach(list.indices, id: \.self) { i in
+                        let s = list[i]
+                        Button {
+                            if s.hasPrefix("http") || s.hasPrefix("/uploads") {
+                                pendingImage = s
+                                pending = ""
+                            } else {
+                                pending = s
+                                pendingImage = ""
+                            }
+                            picking = true
+                        } label: {
+                            Group {
+                                if s.hasPrefix("http") || s.hasPrefix("/uploads") {
+                                    RemoteImage(path: s)
+                                } else {
+                                    Text(s).font(pf(30))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(C.cardBg))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 12)
+                Spacer().frame(height: 24)
+            }
+            .background(C.pageBg)
+        }
+        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack { dismiss() }
+        .hidesTabBar()
+        .task {
+            packs = (try? await API.shared.stickerPacks()) ?? []
+        }
+        .confirmationDialog(Tr("发给谁？"), isPresented: $picking, titleVisibility: .visible) {
+            ForEach(app.chats.prefix(12)) { chat in
+                Button("发给 \(chat.name)") {
+                    send(to: chat.id)
+                }
+            }
+            Button(Tr("取消"), role: .cancel) { }
+        }
+    }
+
+    private func send(to chatId: String) {
+        let text = pending
+        let img = pendingImage
+        pending = ""
+        pendingImage = ""
+        guard !text.isEmpty || !img.isEmpty else { return }
+        Task {
+            _ = try? await API.shared.send(chatId: chatId,
+                                           kind: img.isEmpty ? "text" : "image",
+                                           content: img.isEmpty ? text : img)
+            await app.loadChats()
+            app.show(Tr("表情已发出"))
+        }
+    }
+
+    private func tabButton(_ index: Int, _ icon: String, _ name: String) -> some View {
+        Button {
+            tab = index
+        } label: {
+            HStack(spacing: 4) {
+                Text(icon).font(pf(15))
+                Text(name).font(pf(13))
+            }
+            .foregroundColor(tab == index ? .white : C.label)
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(tab == index ? C.green : C.cardBg)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}

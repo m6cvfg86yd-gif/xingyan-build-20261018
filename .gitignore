@@ -1,0 +1,11 @@
+dl_*/
+
+# 服务端的用户数据、密钥、管理员哈希：绝不入库
+server/data/
+
+# 打包产物与历史备份（服务器上有，仓库里只留源码）
+server/public/*.ipa
+server/public/*.ipa.bak*
+server/public/*.bak*
+server/*.bak-*
+server/server.js.bak*

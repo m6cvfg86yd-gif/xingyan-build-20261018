@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 助手 / 贾维斯AI 设置</title>
+<style>
+  :root { --ink:#191919; --gray:#8a8a8e; --line:#e5e5ea; --bg:#f2f2f7; --green:#07C160; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:20px; margin:16px 0 6px; font-weight:500; }
+  .sub { color:var(--gray); font-size:13px; margin-bottom:16px; }
+  .card { background:#fff; border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  label { display:block; font-size:13px; color:var(--gray); margin:12px 0 6px; }
+  input, textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; font-family:inherit; background:#fff; }
+  textarea { min-height:90px; resize:vertical; }
+  .row { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .row input[type=checkbox] { width:auto; }
+  button { border:0; border-radius:12px; padding:13px 18px; font-size:16px; font-weight:500; background:var(--green); color:#fff; width:100%; margin-top:16px; }
+  button.ghost { background:#e9e9ee; color:#191919; }
+  .tip { color:var(--gray); font-size:12.5px; margin-top:10px; }
+  .ok { color:var(--green); font-size:13px; margin-top:10px; }
+  code { background:#ededf0; border-radius:5px; padding:1px 5px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 助手 / 贾维斯AI</h1>
+  <div class="sub">填好密钥就能用。改完立刻生效，不用重启。</div>
+
+  <div class="card" id="loginCard" hidden>
+    <label>管理密码</label>
+    <input id="pwd" type="password" placeholder="请输入后台管理密码">
+    <button id="loginBtn">登录</button>
+    <div class="tip">默认密码 chris888（和后台一致）</div>
+  </div>
+
+  <div class="card" id="formCard" hidden>
+    <div class="row"><input type="checkbox" id="enabled"><label for="enabled" style="margin:0">启用 AI（关掉后机器人不回复）</label></div>
+    <div class="row"><input type="checkbox" id="autoReply"><label for="autoReply" style="margin:0">自动回复（我不在线时，AI 替我回一句）</label></div>
+    <label>AI 密钥（API Key）</label>
+    <input id="apiKey" type="text" placeholder="sk-...（留空=不改）">
+    <div class="tip" id="keyTip"></div>
+    <label>接口地址</label>
+    <input id="baseUrl" type="text" placeholder="https://api.deepseek.com">
+    <div class="tip">DeepSeek / Kimi / 智谱 / OpenAI 这类都兼容，填对地址就行</div>
+    <label>模型</label>
+    <input id="model" type="text" placeholder="deepseek-chat">
+    <label>人设（AI 助手怎么说话）</label>
+    <textarea id="systemPrompt"></textarea>
+    <label>人设（贾维斯AI 怎么说话 · 像豆包那样会聊天 + 会干活）</label>
+    <textarea id="housekeeperPrompt"></textarea>
+    <button id="saveBtn">保存</button>
+    <div class="ok" id="ok"></div>
+    <div class="tip">机器人账号：AI 助手（ai）· 贾维斯AI（housekeeper）—— 它们已经自动加你为好友，打开手机上的软件就能看到。</div>
+    <div class="tip">贾维斯AI 能听懂：<code>提醒我 8:30 开会</code> <code>天气 上海</code> <code>几点</code> <code>记账 午饭 25</code> <code>账本</code> <code>给张三发消息 你好</code> <code>发朋友圈 今天天气真好</code> <code>开启自动回复</code></div>
+  </div>
+</div>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+function api(path, opt) {
+  return fetch('/api/admin' + path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opt || {}))
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok || b.ok === false) throw new Error(b.error || ('请求失败 ' + r.status)); return b.data; }); });
+}
+function load() {
+  api('/ai').then(function (d) {
+    var a = d.ai || {};
+    $('loginCard').hidden = true; $('formCard').hidden = false;
+    $('enabled').checked = !!a.enabled;
+    $('autoReply').checked = !!a.autoReply;
+    $('baseUrl').value = a.baseUrl || '';
+    $('model').value = a.model || '';
+    $('systemPrompt').value = a.systemPrompt || '';
+    $('housekeeperPrompt').value = a.housekeeperPrompt || '';
+    $('keyTip').textContent = a.hasKey ? ('现在用的密钥：' + a.keyTail + '（要换就直接粘新的）') : '还没填密钥，填了才能聊天';
+  }).catch(function () {
+    $('loginCard').hidden = false; $('formCard').hidden = true;
+  });
+}
+$('loginBtn').onclick = function () {
+  api('/login', { method: 'POST', body: JSON.stringify({ password: $('pwd').value }) })
+    .then(load).catch(function (e) { alert(e.message); });
+};
+$('saveBtn').onclick = function () {
+  $('ok').textContent = '';
+  api('/ai', { method: 'POST', body: JSON.stringify({
+    enabled: $('enabled').checked, autoReply: $('autoReply').checked,
+    apiKey: $('apiKey').value, baseUrl: $('baseUrl').value, model: $('model').value, systemPrompt: $('systemPrompt').value, housekeeperPrompt: $('housekeeperPrompt').value
+  }) }).then(function () { $('apiKey').value = ''; $('ok').textContent = '已保存 ✓'; load(); })
+     .catch(function (e) { alert(e.message); });
+};
+load();
+</script>
+</body>
+</html>

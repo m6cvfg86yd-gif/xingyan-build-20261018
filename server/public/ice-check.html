@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>通话通道自检</title>
+<style>
+  body{margin:0;background:#0f1216;color:#e6edf3;font:15px/1.7 -apple-system,"Microsoft YaHei",sans-serif;padding:24px}
+  h1{font-size:18px;margin:0 0 6px}
+  .box{background:#161c24;border:1px solid #24303c;border-radius:12px;padding:16px;margin-top:14px;word-break:break-all}
+  .ok{color:#2ee6a8}.bad{color:#ff7b7b}.hint{color:#7b8b9c;font-size:13px}
+  code{background:#0d1319;padding:2px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<h1>通话通道自检</h1>
+<div class="hint">这个页面只做一件事：按后台的配置去收集通话用的服务器地址，看能不能拿到「中继(relay)」候选。拿得到 = 外网通话能中转。</div>
+<div class="box" id="cfg">正在读取后台配置…</div>
+<div class="box" id="cand">正在收集候选…（最多 8 秒）</div>
+<div class="box" id="res"></div>
+<script src="ice-check.js" charset="utf-8"></script>
+</body>
+</html>

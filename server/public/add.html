@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>加好友</title>
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<style>
+  :root{ --bg:#f4f5f7; --card:#fff; --txt:#15171a; --sub:#969ba3; --acc:#07C160; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0f1012; --card:#1b1c1f; --txt:#eef1f5; --sub:#8b9099; } }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--txt);display:flex;align-items:center;justify-content:center;
+       font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:24px}
+  .box{width:100%;max-width:340px;background:var(--card);border-radius:16px;padding:26px 20px;text-align:center;
+       box-shadow:0 8px 24px rgba(16,24,40,.08)}
+  .av{width:64px;height:64px;border-radius:8px;object-fit:cover;background:#eee;margin:0 auto 12px;display:block}
+  h1{margin:0 0 6px;font-size:18px}
+  p{margin:0 0 18px;font-size:13.5px;color:var(--sub)}
+  a.btn{display:block;height:48px;line-height:48px;border-radius:12px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600}
+  .ico{font-size:38px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="ico" id="ico">👤</div>
+  <img class="av" id="av" style="display:none" alt="">
+  <h1 id="title">正在打开…</h1>
+  <p id="sub">马上就好，别关页面</p>
+  <a class="btn" id="btn" href="/m.html" style="display:none">打开聊天</a>
+</div>
+<script src="/add.js"></script>
+</body>
+</html>

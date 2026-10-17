@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<title>&#8205;</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
+<!-- 添加到主屏幕（iOS / 安卓）用的：图标、名字、独立窗口 -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CHRIS聊天">
+<meta name="application-name" content="CHRIS聊天">
+<meta name="theme-color" content="#EDEDED" id="themeColorMeta">
+<!-- 打包成 App 打开时，把相对地址指到局域网服务器；网页版里这行不起作用 -->
+<script src="native-base.js"></script>
+<link rel="stylesheet" href="m.css">
+</head>
+<body>
+
+<!-- 登录 -->
+<div class="wx-login" id="loginScreen">
+  <!-- 手机号登录（外壳）：国家地区 + 手机号 + 验证码 -->
+  <header class="lg-nav">
+    <button class="lg-back" id="lgBack" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 5.4L7.9 12l6.7 6.6"/></svg>
+    </button>
+    <span class="lg-nav-title">手机号登录</span>
+  </header>
+  <div class="lg-body">
+    <div class="lg-panel">
+      <button class="lg-row" id="lgCountry">
+        <span class="lg-label">国家/地区</span>
+        <span class="lg-value" id="lgCountryVal">中国大陆 (+86)</span>
+        <span class="lg-arrow">›</span>
+      </button>
+      <div class="lg-row is-input">
+        <span class="lg-label">手机号</span>
+        <span class="lg-cc" id="lgCc">+86</span>
+        <input id="lgPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="请填写手机号码">
+      </div>
+      <div class="lg-row is-input">
+        <span class="lg-label">验证码</span>
+        <input id="lgCode" type="tel" inputmode="numeric" maxlength="6" placeholder="请填写验证码" style="padding-left:8px">
+        <button class="lg-code-btn" id="lgCodeBtn">获取验证码</button>
+      </div>
+    </div>
+    <p class="lg-hint">仅上述手机号用于登录验证</p>
+    <button class="lg-other" id="lgOther">其他方式登录</button>
+    <p class="wl-error" id="lgErr" hidden></p>
+
+    <!-- 其他方式登录：账号 + 密码 -->
+    <div class="lg-panel" id="lgPassPanel" hidden>
+      <div class="lg-row is-input">
+        <span class="lg-label">账号</span>
+        <input id="lgUser" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="请填写账号">
+      </div>
+      <div class="lg-row is-input">
+        <span class="lg-label">密码</span>
+        <input id="lgPass" type="password" autocomplete="current-password" placeholder="请填写密码">
+      </div>
+    </div>
+  </div>
+  <div class="lg-foot">
+    <button class="lg-sync" id="lgAgree" type="button">
+      <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle class="tk-ring" cx="12" cy="12" r="9.2"/>
+        <path class="tk-check" d="M8.3 12.3l2.5 2.5 5-5.2" stroke="#fff" stroke-width="2.2"/>
+      </svg>
+      <span>登录后同步最近的聊天记录</span>
+    </button>
+    <button class="wx-btn" id="lgBtn">同意并继续</button>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div class="wx-app" id="app" hidden>
+
+  <!-- 微信（会话） -->
+  <section class="wx-page" data-page="chats">
+    <!-- 顶栏＋搜索框包一层：下拉时只有顶栏那几个字往下滑，搜索框不动；
+         这层 overflow:hidden 把滑出「搜索框下沿」的部分裁掉，不会糊到列表上 -->
+    <div class="wx-toparea">
+      <header class="wx-nav">
+        <span class="wx-nav-title" id="navTitle">微信</span>
+        <div class="wx-nav-right">
+          <button class="wx-ico wx-ico-ring" id="btnNewChat" title="发起聊天" aria-label="发起聊天">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9.15"/>
+              <path d="M12 7.7v8.6M7.7 12h8.6"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div class="wx-search">
+        <span class="ws-box">
+          <span class="ws-ico"><svg viewBox="3.4 3.4 17.4 17.4" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.3"/><path d="M15.3 15.3l4.3 4.3"/></svg></span>
+          <input id="chatSearch" placeholder="搜索">
+        </span>
+      </div>
+    </div>
+    <div class="wx-list" id="chatList"></div>
+  </section>
+
+  <!-- 通讯录 -->
+  <section class="wx-page" data-page="contacts" hidden>
+    <header class="wx-nav"><span class="wx-nav-title">通讯录</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="btnAddFriend" title="加好友">＋</button></div>
+    </header>
+    <div class="wx-search">
+      <div class="ws-box">
+        <span class="ws-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+        </span>
+        <input id="ctSearch" placeholder="搜索">
+      </div>
+    </div>
+    <div class="ct-wrap">
+      <div class="wx-list" id="contactList"></div>
+      <!-- 右侧 A-Z 索引 -->
+      <div class="ct-index" id="ctIndex"></div>
+      <div class="ct-letter" id="ctLetter" hidden></div>
+    </div>
+  </section>
+
+  <!-- 发现 -->
+  <section class="wx-page" data-page="discover" hidden>
+    <!-- 顶部导航：和微信一样居中一个「发现」 -->
+    <header class="wx-nav"><span class="wx-nav-title">发现</span></header>
+    <!-- 里面的行由后台配置（data/discover.json），进入时拉 /api/discover 渲染 -->
+    <div class="me-scroll" id="discoverList"></div>
+  </section>
+
+  <!-- 我 -->
+  <section class="wx-page" data-page="me" hidden>
+    <div class="me-scroll">
+      <!-- 顶部资料卡：头像 + 名字 + 微信号 + 二维码，下面一行是状态和朋友圈 -->
+      <div class="me-block" id="profileTop">
+        <div class="me-profile">
+          <div class="me-avatar" id="meAvatar"></div>
+          <div class="me-info">
+            <div class="me-name" id="meName">—</div>
+            <div class="me-id" id="meId">微信号：—</div>
+          </div>
+          <button class="me-qr" id="meQr" title="我的二维码" aria-label="我的二维码">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3.4" y="3.4" width="6.4" height="6.4" rx="1.4"/>
+              <rect x="14.2" y="3.4" width="6.4" height="6.4" rx="1.4"/>
+              <rect x="3.4" y="14.2" width="6.4" height="6.4" rx="1.4"/>
+              <path d="M14.2 14.2h3.2v3.2h-3.2zM20.6 14.2v6.4M17.4 20.6h3.2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="me-chips">
+          <button class="me-chip" id="chipStatus"><span class="chip-plus">＋</span>状态</button>
+          <button class="me-chip" id="chipMoments">朋友圈<em id="chipFriends">0 个朋友</em></button>
+        </div>
+      </div>
+
+      <div class="me-gap"></div>
+
+      <!-- 功能卡：服务 / 收藏 / 朋友圈 / 作品 / 推荐位 / 表情 / 设置 -->
+      <!-- 我页下面这些行由后台配置（data/me-page.json），进入时拉 /api/me-page 渲染 -->
+      <div id="meList"></div>
+    </div>
+  </section>
+
+  <!-- 附近的人（发现 → 附近）：定位一次，按距离列出附近也开着这个页的人 -->
+  <!-- 摇一摇（发现 → 摇一摇）：摇手机（或点按钮）找同时在摇的人 -->
+  <!-- 视频号（发现 → 视频号）：抖音式上下刷 -->
+  <section class="wx-chat" id="channelsScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="chBack">‹</button>
+      <span class="wx-nav-title">视频号</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="chPublish" title="发表视频">＋</button></div>
+    </header>
+    <div class="feed-scroll" id="feedList"></div>
+    <input type="file" id="chFile" accept="video/*" hidden>
+  </section>
+
+  <!-- 直播专场（发现 → 直播专场） -->
+  <section class="wx-chat" id="liveScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="liveBack">‹</button>
+      <span class="wx-nav-title">直播专场</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="wx-list" id="liveList"></div>
+  </section>
+  <section class="wx-chat" id="liveRoomScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="liveRoomBack">‹</button>
+      <span class="wx-nav-title" id="liveRoomTitle">直播间</span>
+      <div class="wx-nav-right"><span class="nb-count" id="liveRoomCount"></span></div>
+    </header>
+    <div class="live-stage" id="liveStage">
+      <div class="live-danmaku" id="liveDanmaku"></div>
+    </div>
+    <div class="live-bar">
+      <input id="liveInput" placeholder="说点什么…">
+      <button class="live-send" id="liveSend" type="button">发送</button>
+      <button class="live-like" id="liveLike" type="button">❤️</button>
+    </div>
+  </section>
+
+  <!-- 游戏（发现 → 游戏） -->
+  <!-- 我 → 作品：三列方块网格（谁发布的都在这里） -->
+  <section class="wx-chat" id="worksScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="worksBack">‹</button>
+      <span class="wx-nav-title">作品</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="works-grid" id="worksGrid"></div>
+  </section>
+
+  <section class="wx-chat" id="gamePlayScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="gamePlayBack">‹</button>
+      <span class="wx-nav-title">播放</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="play-stage"><video id="playVideo" playsinline controls></video></div>
+  </section>
+
+  <section class="wx-chat" id="gamesScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="gamesBack">‹</button>
+      <span class="wx-nav-title">游戏</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="wx-list" id="gamesList"></div>
+  </section>
+
+  <section class="wx-chat" id="shakeScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="shakeBack">‹</button>
+      <span class="wx-nav-title">摇一摇</span>
+      <div class="wx-nav-right"><span class="nb-count" id="shakeCount"></span></div>
+    </header>
+    <div class="sk-body" id="shakeBody">
+      <div class="sk-hand">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 2.4c.5 0 1 .3 1.2.8l1.5 3.3c.2.5.1 1.1-.3 1.5l-1.3 1.3c1 2 2.6 3.6 4.6 4.6l1.3-1.3c.4-.4 1-.5 1.5-.3l3.3 1.5c.5.2.8.7.8 1.2v3.2c0 .8-.6 1.5-1.4 1.6-.6.1-1.2.1-1.9.1C9.7 19.9 4.1 14.3 3.3 6.6c-.1-.7-.1-1.3 0-1.9.1-.8.8-1.4 1.6-1.4h1.7z"/></svg>
+      </div>
+      <div class="sk-tip" id="shakeTip">摇一摇，找到同时在摇手机的人</div>
+    </div>
+    <div class="sk-foot">
+      <button class="sk-btn" id="shakeBtn" type="button">摇 一 摇</button>
+    </div>
+  </section>
+
+  <section class="wx-chat" id="nearbyScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="nearbyBack">‹</button>
+      <span class="wx-nav-title">附近的人</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="nearbyMore" title="更多">⋯</button></div>
+    </header>
+    <div class="wx-list" id="nearbyList"></div>
+  </section>
+
+  <!-- 聊天 -->
+  <section class="wx-chat" id="chatScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="chatBack">‹</button>
+      <span class="wx-nav-title" id="chatTitle">聊天</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="chatMore">⋯</button></div>
+    </header>
+    <div class="wx-messages" id="messages"></div>
+    <div class="wx-composer">
+      <div class="wx-crow">
+        <button class="wx-cbtn" id="btnVoice" title="语音" aria-label="语音">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10.8"/>
+            <rect x="9.8" y="5.9" width="4.4" height="7.4" rx="2.2"/>
+            <path d="M8.5 11.3a3.5 3.5 0 0 0 7 0"/>
+            <path d="M12 15.2v2.1"/>
+          </svg>
+        </button>
+        <div class="wx-input-wrap">
+          <input id="msgInput" placeholder="">
+          <button class="wx-cbtn wx-cbtn-in" id="btnSpeaker" title="提示音" aria-label="提示音">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.4 9.6h3.1L12 5.5v13L7.5 14.4H4.4z"/>
+              <path d="M15.6 9.7a3.5 3.5 0 0 1 0 4.6"/>
+              <path d="M18.2 7.5a7.1 7.1 0 0 1 0 9"/>
+            </svg>
+          </button>
+        </div>
+        <button class="wx-cbtn" id="btnEmoji" title="表情" aria-label="表情">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10.8"/>
+            <path d="M8.4 14.2a4.2 4.2 0 0 0 7.2 0"/>
+            <circle cx="9.3" cy="9.5" r="1.1" fill="currentColor" stroke="none"/>
+            <circle cx="14.7" cy="9.5" r="1.1" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <button class="wx-cbtn" id="btnPlus" title="更多" aria-label="更多">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10.8"/>
+            <path d="M12 7.5v9M7.5 12h9"/>
+          </svg>
+        </button>
+      </div>
+      <!-- 表情面板：和微信表情包一致（8 列 × 4 行一页，可左右滑） -->
+      <div class="wx-emoji" id="emojiPanel" hidden>
+        <div class="wx-emoji-pages" id="emojiPages"></div>
+        <div class="wx-emoji-bar">
+          <div class="wx-emoji-dots" id="emojiDots"></div>
+          <div class="wx-emoji-rt">
+            <button class="wx-emoji-key" id="emojiDel" title="删除" aria-label="删除">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.2 5.4h9.3a2.6 2.6 0 0 1 2.6 2.6v8a2.6 2.6 0 0 1-2.6 2.6H9.2L2.9 12z"/>
+                <path d="M12.7 9.6l4.8 4.8M17.5 9.6l-4.8 4.8"/>
+              </svg>
+            </button>
+            <button class="wx-emoji-send" id="emojiSend">发送</button>
+          </div>
+        </div>
+      </div>
+      <!-- ＋ 面板：照着微信做，一页 8 个、可左右翻页；名称/图标/开关都在后台「＋ 面板」里管 -->
+      <div class="wx-plus" id="plusPanel" hidden>
+        <div class="wx-plus-pages" id="plusPages"></div>
+        <div class="wx-plus-dots" id="plusDots"></div>
+      </div>
+      <!-- 礼物面板：礼物都在后台「礼物管理」里加，这里只负责挑一个送出去 -->
+      <div class="wx-gift" id="giftPanel" hidden>
+        <div class="wx-gift-pages" id="giftPages"></div>
+        <div class="wx-plus-dots" id="giftDots"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 朋友圈 -->
+  <section class="wx-moments" id="momentsScreen" hidden>
+    <header class="wx-nav is-float">
+      <button class="wx-back is-cover" id="momentsBack" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16.2 4.1L8.9 12l7.3 7.9"/>
+        </svg>
+      </button>
+      <span class="wx-nav-title" id="momentsTitle"></span>
+      <div class="wx-nav-right">
+        <button class="wx-ico is-cover" id="momentsCamera" aria-label="发表 / 换封面">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.4 8.9a2.1 2.1 0 0 1 2.1-2.1h1.8l1.3-1.9h6.8l1.3 1.9h1.8a2.1 2.1 0 0 1 2.1 2.1v7.6a2.1 2.1 0 0 1-2.1 2.1H5.5a2.1 2.1 0 0 1-2.1-2.1z"/>
+            <circle cx="12" cy="12.5" r="3.4"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+    <div class="wx-moments-scroll" id="momentsScroll">
+      <div class="wx-cover" id="momentsCover">
+        <div class="wx-cover-me">
+          <div class="wx-me-avatar is-cover" id="coverAvatar"></div>
+          <div class="wx-cover-name" id="coverName">—</div>
+        </div>
+      </div>
+      <div class="wx-moment-list" id="momentList"></div>
+    </div>
+  </section>
+
+  <!-- 新的朋友 -->
+  <section class="wx-chat" id="newFriendsScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="nfBack">‹</button>
+      <span class="wx-nav-title">新的朋友</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="wx-list" id="requestList"></div>
+  </section>
+
+  <!-- 个人信息（手机端也能改昵称 / 头像 / 性别 / 地区 / 签名） -->
+  <!-- 表情包（本地表情包；第三方图源在后台开关，接口已留好） -->
+  <section class="wx-chat" id="stickerScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="stkBack">‹</button>
+      <span class="wx-nav-title">表情</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="wx-search" id="stkSearchRow" hidden>
+      <div class="ws-box">
+        <span class="ws-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+        </span>
+        <input id="stkSearch" placeholder="搜索表情">
+      </div>
+    </div>
+    <div class="stk-scroll">
+      <div class="stk-packs" id="stkPacks"></div>
+      <div class="stk-grid" id="stkGrid"></div>
+      <p class="stk-empty" id="stkEmpty" hidden>还没有表情包，去后台「表情包」加一个</p>
+    </div>
+  </section>
+
+  <!-- 设置（照着参考图：搜索框 + 分组列表 + 底部退出登录） -->
+  <!-- 手机号（照着参考图：已绑定 + 说明 + 上传通讯录 + 更换按钮） -->
+  <!-- 设置状态（照着参考图：彩色背景 + 状态宫格） -->
+  <section class="wx-chat st-screen" id="statusScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="stBack">‹</button>
+      <span class="wx-nav-title" id="stTitle">设置状态</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="st-scroll" id="stScroll"></div>
+  </section>
+
+  <!-- 转账（照着参考图：转账给 XX + 微信号 + 转账金额 + 添加转账说明 + 数字键盘） -->
+  <section class="wx-chat tf-screen" id="transferScreen" hidden>
+    <div class="tf-head">
+      <header class="wx-nav">
+        <button class="wx-back" id="tfBack">‹</button>
+        <span class="wx-nav-title"></span>
+        <div class="wx-nav-right"></div>
+      </header>
+      <div class="tf-recip">
+        <div class="tf-recip-txt">
+          <div class="tf-title" id="tfTitle">转账给</div>
+          <div class="tf-peer" id="tfPeer">微信号：—</div>
+        </div>
+        <div class="tf-avatar" id="tfAvatar"></div>
+      </div>
+    </div>
+    <div class="tf-body">
+      <div class="tf-amount-box" id="tfAmountBox">
+        <div class="tf-amount-label">转账金额</div>
+        <div class="tf-amount" id="tfAmountLine">
+          <span class="tf-cny">¥</span>
+          <span class="tf-numwrap">
+            <span class="tf-digits" id="tfDigits"></span>
+          </span>
+          <span class="tf-caret" id="tfCaret"></span>
+        </div>
+        <div class="tf-units-line">
+          <span class="tf-cny-spacer" aria-hidden="true">¥</span>
+          <span class="tf-units" id="tfUnits"></span>
+        </div>
+      </div>
+      <div class="tf-note" id="tfNoteRow">添加转账说明</div>
+    </div>
+    <div class="tf-pad" id="tfPad">
+      <button class="tf-key" data-k="1">1</button>
+      <button class="tf-key" data-k="2">2</button>
+      <button class="tf-key" data-k="3">3</button>
+      <button class="tf-key tf-del" data-k="del" aria-label="删除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.2 5.4h9.3a2.6 2.6 0 0 1 2.6 2.6v8a2.6 2.6 0 0 1-2.6 2.6H9.2L2.9 12z"/><path d="M12.7 9.6l4.8 4.8M17.5 9.6l-4.8 4.8"/>
+        </svg>
+      </button>
+      <button class="tf-key" data-k="4">4</button>
+      <button class="tf-key" data-k="5">5</button>
+      <button class="tf-key" data-k="6">6</button>
+      <button class="tf-key" data-k="7">7</button>
+      <button class="tf-key" data-k="8">8</button>
+      <button class="tf-key" data-k="9">9</button>
+      <button class="tf-send" id="tfSend" disabled>转账</button>
+      <button class="tf-key tf-zero" data-k="0">0</button>
+      <button class="tf-key" data-k=".">.</button>
+    </div>
+  </section>
+
+  <section class="wx-chat" id="phoneScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="phBack">‹</button>
+      <span class="wx-nav-title">手机号</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="pf-scroll">
+      <div class="pf-block">
+        <div class="pf-row is-static">
+          <span class="pf-label" id="phLabel">已绑定手机号</span>
+          <span class="pf-value" id="phValue">—</span>
+          <button class="ph-link" id="phToggle">显示</button>
+        </div>
+      </div>
+      <p class="ph-note" id="phNote"></p>
+      <div class="pf-block" id="phContactsBlock">
+        <button class="pf-row" id="phContacts">
+          <span class="pf-label">上传通讯录找朋友</span>
+          <span class="me-arrow">›</span>
+        </button>
+      </div>
+      <div class="ph-actions">
+        <button class="ph-btn" id="phChange">更换手机号</button>
+      </div>
+      <p class="ph-note is-foot">手机号只用于账号安全和找回密码，不会展示给好友；一年只能更换一次。</p>
+    </div>
+  </section>
+
+  <section class="wx-chat" id="settingsScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="setBack">‹</button>
+      <span class="wx-nav-title">设置</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="wx-search">
+      <div class="ws-box">
+        <span class="ws-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+        </span>
+        <input id="setSearch" placeholder="搜索">
+      </div>
+    </div>
+    <div class="set-scroll" id="setScroll"></div>
+  </section>
+
+  <!-- 支付成功：单独一页（参考图：绿勾 + 支付成功 + 待 XX 确认收款 + 金额 + 完成按钮） -->
+  <!-- 转账详情（没收款之前的样子）：蓝圈图标 + 待 XX 收款 + 金额 + 提示 + 转账时间 + 账单详情 -->
+  <!-- 账单详情：单独一页（照参考图：头像 + 转账-转给XX + 金额 + 各字段 + 账单服务 + 财付通） -->
+  <!-- 收藏：聊天里长按 → 收藏，都收在这里 -->
+  <!-- 位置：地图上拖动选真实位置，再发出去 -->
+  <section class="wx-chat loc-page" id="locScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="locBack">‹</button>
+      <span class="wx-nav-title">位置</span>
+      <div class="wx-nav-right"><button class="loc-send" id="locSend">发送</button></div>
+    </header>
+    <div class="loc-search">
+      <input id="locQuery" placeholder="搜索地点（中文/拼音都行）" autocomplete="off">
+      <button id="locGo">搜索</button>
+    </div>
+    <div class="loc-map" id="locMap">
+      <div class="loc-tiles" id="locTiles"></div>
+      <div class="loc-pin"></div>
+      <button class="loc-btn loc-in" id="locIn" aria-label="放大">＋</button>
+      <button class="loc-btn loc-out" id="locOut" aria-label="缩小">－</button>
+      <button class="loc-btn loc-me" id="locMe" aria-label="回到当前位置">◎</button>
+      <div class="loc-loading" id="locLoading" hidden>地图加载中…</div>
+    </div>
+    <div class="loc-foot">
+      <div class="loc-name" id="locName">我的位置</div>
+      <div class="loc-coord" id="locCoord">拖动地图选点</div>
+    </div>
+  </section>
+
+  <section class="wx-chat" id="favScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="favBack">‹</button>
+      <span class="wx-nav-title">收藏</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="fav-scroll" id="favList"></div>
+  </section>
+
+  <section class="wx-chat bill-page" id="billScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="billBack">‹</button>
+      <span class="wx-nav-title">账单</span>
+      <div class="wx-nav-right"><button class="bill-all" id="billAll">全部账单</button></div>
+    </header>
+    <div class="bl-scroll">
+      <div class="bl-hero">
+        <div class="bl-avatar" id="blAvatar"></div>
+        <div class="bl-type" id="blType">转账-转给对方</div>
+        <div class="bl-amount" id="blAmount">¥0.00</div>
+      </div>
+      <div class="bl-block">
+        <div class="bl-row"><span class="bl-k">当前状态</span><span class="bl-v" id="blState">—</span></div>
+        <div class="bl-row is-plain"><button class="bl-link" id="blAction">提醒对方收款</button></div>
+        <div class="bl-row"><span class="bl-k">转账说明</span><span class="bl-v" id="blNote">微信转账</span></div>
+        <div class="bl-row"><span class="bl-k">转账时间</span><span class="bl-v" id="blTime">—</span></div>
+        <div class="bl-row"><span class="bl-k">支付方式</span><span class="bl-v" id="blMethod">零钱</span></div>
+        <div class="bl-row"><span class="bl-k">转账单号</span><span class="bl-v" id="blNo">—</span></div>
+        <div class="bl-row" id="blRecvRow" hidden><span class="bl-k">收款时间</span><span class="bl-v" id="blRecvAt"></span></div>
+        <div class="bl-row" id="blBackRow" hidden><span class="bl-k">退回时间</span><span class="bl-v" id="blBackAt"></span></div>
+      </div>
+      <div class="bl-block is-service">
+        <div class="bl-head">账单服务</div>
+        <button class="bl-srow" data-bill-svc="doubt"><span class="bl-sico">？</span><span class="bl-sname">对订单有疑惑</span><span class="me-arrow">›</span></button>
+        <button class="bl-srow" data-bill-svc="locate"><span class="bl-sico">💬</span><span class="bl-sname">定位到聊天位置</span><span class="me-arrow">›</span></button>
+        <button class="bl-srow" data-bill-svc="history"><span class="bl-sico">📄</span><span class="bl-sname">查看往来转账</span><span class="me-arrow">›</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 服务（照参考图重做：上面一张绿卡「收付款 / 钱包」，下面一张张白卡，
+       每张白卡 = 分类标题 + 四列图标格子；整页内容由后台「服务页」模块下发） -->
+  <section class="wx-chat svc-page" id="serviceScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="svcBack">‹</button>
+      <span class="wx-nav-title" id="svcTitle">服务</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="svcMore">⋯</button></div>
+    </header>
+    <div class="sv-scroll" id="svcList"></div>
+  </section>
+
+  <!-- 钱包（服务页点「钱包」进来；照参考图：两张全宽白卡 + 底部两个蓝色链接，
+       内容由后台「钱包页」模块下发，零钱那一行显示真实余额） -->
+  <section class="wx-chat wa-page" id="walletScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="waBack">‹</button>
+      <span class="wx-nav-title" id="waTitle">钱包</span>
+      <div class="wx-nav-right"><button class="wa-topright" id="waRight">账单</button></div>
+    </header>
+    <div class="wa-scroll" id="waList"></div>
+    <div class="wa-foot" id="waFoot"></div>
+  </section>
+
+  <!-- 零钱（钱包页点「零钱」进来，照微信参考图）：
+       中间一个金币 + 「我的零钱」+ 余额（+ 冻结提示），底下贴着屏幕底部：
+       充值（绿）+ 提现（浅灰）+ 常见问题/账户升级服务 + 财付通说明 -->
+  <section class="wx-chat coin-page" id="coinScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="coinBack">‹</button>
+      <span class="wx-nav-title" id="coinNavTitle">零钱明细</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="coin-scroll" id="coinScroll">
+      <div class="coin-top">
+        <div class="coin-ico" id="coinIcon"><span class="coin-yen" id="coinYen">¥</span></div>
+        <div class="coin-title" id="coinTitle">我的零钱</div>
+        <div class="coin-amount" id="coinAmount">¥0.00</div>
+        <div class="coin-note" id="coinNote" hidden></div>
+      </div>
+      <div class="coin-bottom">
+        <button class="coin-btn is-recharge" id="coinRecharge">充值</button>
+        <button class="coin-btn is-withdraw" id="coinWithdraw">提现</button>
+        <div class="coin-links" id="coinLinks"></div>
+        <div class="coin-foot" id="coinFoot"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 账单（钱包页右上角「账单」进来，照微信参考图）：
+       顶栏 = 「全部账单 ▾」+「🔍 查找交易」+「收支统计 ›」，
+       下面每个月一行（月份 + ▾ + 支出/收入），再一张白卡列当月的账（80pt 一行）。 -->
+  <section class="wx-chat bll-page" id="billListScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="bllBack">‹</button>
+      <span class="wx-nav-title">账单</span>
+      <div class="wx-nav-right"><button class="wx-ico" id="bllMore">⋯</button></div>
+    </header>
+    <div class="bll-top">
+      <button class="bll-pill" id="bllFilter"><span id="bllFilterText">全部账单</span>
+        <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 4.4L6 8l3.6-3.6"/></svg>
+      </button>
+      <div class="bll-search">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+        <input id="bllQuery" placeholder="查找交易" autocomplete="off">
+      </div>
+      <button class="bll-stats" id="bllStats">收支统计
+        <svg viewBox="0 0 8 14" width="6.4" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.3l5 5.7-5 5.7"/></svg>
+      </button>
+    </div>
+    <div class="bll-scroll" id="bllList"></div>
+  </section>
+
+  <section class="wx-chat tf-detail" id="tfDetailScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="tdBack">‹</button>
+      <span class="wx-nav-title"></span>
+      <div class="wx-nav-right"><button class="wx-ico" id="tdMore">⋯</button></div>
+    </header>
+    <div class="td-body">
+      <div class="td-icon" id="tdIcon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7.4 5.6l4.6 5 4.6-5"/><path d="M12 10.2v8.2"/><path d="M8.2 12.6h7.6M8.2 15.4h7.6"/>
+        </svg>
+      </div>
+      <div class="td-title" id="tdTitle">待对方收款</div>
+      <div class="td-amount" id="tdAmount">¥0.00</div>
+      <div class="td-hint">
+        <span class="td-hint-text" id="tdHint">1天内对方未收款，将退还给你。</span>
+        <button class="td-link" id="tdAction">提醒对方收款</button>
+      </div>
+      <div class="td-rows">
+        <div class="td-row"><span class="td-k">转账时间</span><span class="td-v" id="tdTime">—</span></div>
+        <div class="td-row" id="tdNoteRow" hidden><span class="td-k">转账说明</span><span class="td-v" id="tdNote"></span></div>
+        <div class="td-row"><span class="td-k">转账单号</span><span class="td-v" id="tdNo">—</span></div>
+      </div>
+      <div class="td-state" id="tdState"></div>
+    </div>
+    <button class="td-bill" id="tdBill">账单详情</button>
+  </section>
+
+  <section class="wx-chat pay-ok" id="payOkScreen" hidden>
+    <div class="ok-hero">
+      <span class="ok-tick">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="12" fill="#07c160"/>
+          <path d="M6.7 12.5l3.5 3.5 7.1-7.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="ok-title">支付成功</span>
+    </div>
+    <div class="ok-sub" id="okSub">待好友确认收款</div>
+    <div class="ok-sum" id="okSum">¥0.00</div>
+    <div class="ok-info">
+      <div class="ok-row"><span class="ok-k">付款方式</span><span class="ok-v" id="okMethod">余额</span></div>
+      <div class="ok-row"><span class="ok-k">余额</span><span class="ok-v" id="okBalance">¥0.00</span></div>
+      <div class="ok-row" id="okNoteRow" hidden><span class="ok-k">转账说明</span><span class="ok-v" id="okNote"></span></div>
+      <div class="ok-row"><span class="ok-k">收款时限</span><span class="ok-v">24 小时未收款自动退回</span></div>
+    </div>
+    <button class="ok-done" id="okDone">完成</button>
+  </section>
+
+  <!-- 安全中心（手机端）：支付密码在这里设置 -->
+  <section class="wx-chat" id="secScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="secBack">‹</button>
+      <span class="wx-nav-title">安全中心</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="pf-scroll">
+      <div class="pf-block">
+        <div class="pf-row is-static">
+          <span class="pf-label">安全评分</span>
+          <span class="pf-value" id="secScore">—</span>
+        </div>
+        <div class="pf-row is-static">
+          <span class="pf-label">常用登录设备</span>
+          <span class="pf-value" id="secDevices">—</span>
+        </div>
+      </div>
+      <div class="pf-block">
+        <button class="pf-row" id="secPayPwdRow">
+          <span class="pf-label">支付密码</span>
+          <span class="pf-value" id="secPayPwdVal">未设置</span>
+          <span class="me-arrow">›</span>
+        </button>
+      </div>
+      <p class="sec-hint">支付密码是 6 位数字，转账确认时要输入，忘了可以在这里重设。</p>
+    </div>
+  </section>
+
+  <!-- 支付密码：6 个格子 + 数字键盘，设置 / 修改都用这一页 -->
+  <section class="wx-chat pp-screen" id="ppScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="ppBack">‹</button>
+      <span class="wx-nav-title" id="ppTitle">设置支付密码</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="pp-body">
+      <div class="pp-tip" id="ppTip">请输入 6 位数字支付密码</div>
+      <div class="pay-pwd pp-cells" id="ppCells">
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+      </div>
+      <div class="pp-hint" id="ppHint"></div>
+    </div>
+    <div class="pay-pad" id="ppPad">
+      <button class="pay-key" data-pp="1">1</button>
+      <button class="pay-key" data-pp="2">2</button>
+      <button class="pay-key" data-pp="3">3</button>
+      <button class="pay-key" data-pp="4">4</button>
+      <button class="pay-key" data-pp="5">5</button>
+      <button class="pay-key" data-pp="6">6</button>
+      <button class="pay-key" data-pp="7">7</button>
+      <button class="pay-key" data-pp="8">8</button>
+      <button class="pay-key" data-pp="9">9</button>
+      <span class="pay-key is-ghost"></span>
+      <button class="pay-key" data-pp="0">0</button>
+      <button class="pay-key is-ghost is-del" data-pp="del" aria-label="删除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.2 5.4h9.3a2.6 2.6 0 0 1 2.6 2.6v8a2.6 2.6 0 0 1-2.6 2.6H9.2L2.9 12z"/><path d="M12.7 9.6l4.8 4.8M17.5 9.6l-4.8 4.8"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pay-safe"></div>
+  </section>
+
+  <section class="wx-chat" id="profileScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="pfBack">‹</button>
+      <span class="wx-nav-title">个人信息</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="pf-scroll">
+      <div class="pf-block">
+        <button class="pf-row" id="pfAvatarRow">
+          <span class="pf-label">头像</span>
+          <span class="pf-avatar" id="pfAvatar"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfNameRow">
+          <span class="pf-label">名字</span>
+          <span class="pf-value" id="pfNameVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfGenderRow">
+          <span class="pf-label">性别</span>
+          <span class="pf-value" id="pfGenderVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfRegionRow">
+          <span class="pf-label">地区</span>
+          <span class="pf-value" id="pfRegionVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfPhoneRow">
+          <span class="pf-label">手机号</span>
+          <span class="pf-value" id="pfPhoneVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <div class="pf-row is-static">
+          <span class="pf-label">微信号</span>
+          <span class="pf-value" id="pfUserVal"></span>
+        </div>
+        <button class="pf-row" id="pfQrRow">
+          <span class="pf-label">我的二维码</span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfPatRow">
+          <span class="pf-label">拍一拍</span>
+          <span class="pf-value" id="pfPatVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfBioRow">
+          <span class="pf-label">签名</span>
+          <span class="pf-value" id="pfBioVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+        <button class="pf-row" id="pfRingRow">
+          <span class="pf-label">来电铃声</span>
+          <span class="pf-value" id="pfRingVal"></span>
+          <span class="me-arrow">›</span>
+        </button>
+      </div>
+      <p class="pf-hint">改完自动保存，好友那边在线就能看到新头像和名字。</p>
+      <input type="file" id="pfFile" accept="image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,image/tiff,image/bmp" hidden>
+    </div>
+  </section>
+
+  <!-- 底部标签栏 -->
+
+  <!-- 腾讯新闻：热点列表 + 让贾维斯讲讲 -->
+  <section class="wx-chat" id="newsScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="newsBack">‹</button>
+      <span class="wx-nav-title">腾讯新闻</span>
+      <div class="wx-nav-right"></div>
+    </header>
+    <div class="news-scroll" id="newsScroll">
+      <div class="news-list" id="newsList"></div>
+      <button class="news-ai" id="newsAsk">
+        <span class="news-ai-ic">✦</span>
+        <span class="news-ai-tx">让贾维斯讲讲今天的这些热点</span>
+        <span class="me-arrow">›</span>
+      </button>
+      <p class="news-foot">内容来自腾讯新闻 · 下拉可刷新</p>
+    </div>
+  </section>
+
+  <!-- 名片（朋友资料）：点任何人的头像（聊天 / 通讯录 / 朋友圈）都打开这一页。
+       尺寸全部按 桌面\飞信 里那张 3 倍稿逐像素量的（420 宽）：头像 64、名字 20px、
+       三行资料 15px/行高 22、分组卡片间隔 8px、按钮两行各 55.6px。 -->
+  <section class="wx-chat" id="cardScreen" hidden>
+    <header class="wx-nav">
+      <button class="wx-back" id="cardBack">‹</button>
+      <span class="wx-nav-title" id="cardNavTitle"></span>
+      <div class="wx-nav-right"><button class="wx-ico" id="cardMore">⋯</button></div>
+    </header>
+    <div class="cd-scroll" id="cardScroll">
+      <div class="cd-hero">
+        <div class="cd-avatar" id="cdAvatar"></div>
+        <div class="cd-info">
+          <div class="cd-name-row"><span class="cd-name" id="cdName">—</span><span class="cd-gender" id="cdGender"></span></div>
+          <div class="cd-line" id="cdNick">昵称：—</div>
+          <div class="cd-line" id="cdWx">微信号：—</div>
+          <div class="cd-line" id="cdRegion">地区：—</div>
+        </div>
+      </div>
+      <div class="cd-card is-rows" id="cdInfoCard">
+        <button class="cd-row" id="cdMoreRow"><span class="cd-label">朋友资料</span><span class="cd-arrow"></span></button>
+        <div class="cd-row is-static" id="cdPhoneRow"><span class="cd-label">电话</span><span class="cd-value" id="cdPhone">—</span></div>
+      </div>
+      <div class="cd-card" id="cdThumbCard">
+        <div class="cd-thumb-row"><span class="cd-label">朋友圈</span><div class="cd-thumbs" id="cdThumbs"></div><span class="cd-arrow"></span></div>
+      </div>
+      <div class="cd-card cd-acts" id="cdActs"></div>
+    </div>
+  </section>
+  <nav class="wx-tabbar" id="tabbar">
+    <button class="wx-tab is-active" data-tab="chats">
+      <span class="wt-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3.4c-5.1 0-9.2 3.5-9.2 7.8 0 2.5 1.4 4.8 3.7 6.2l-.9 3 3.3-1.7c1 .2 2 .3 3.1.3 5.1 0 9.2-3.5 9.2-7.8S17.1 3.4 12 3.4z"/>
+        </svg>
+      </span>
+      <span class="wt-ico is-on">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3.4c-5.1 0-9.2 3.5-9.2 7.8 0 2.5 1.4 4.8 3.7 6.2l-.9 3 3.3-1.7c1 .2 2 .3 3.1.3 5.1 0 9.2-3.5 9.2-7.8S17.1 3.4 12 3.4z"/>
+        </svg>
+      </span>
+      <span class="wt-label">微信</span>
+      <em class="wt-badge" id="tabBadge" hidden>0</em>
+    </button>
+    <button class="wx-tab" data-tab="contacts">
+      <span class="wt-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9.9" cy="8.6" r="3.3"/>
+          <path d="M3.5 19.4c0-3.4 2.9-6 6.4-6s6.4 2.6 6.4 6"/>
+          <path d="M16.6 6a2.9 2.9 0 0 1 0 5.6"/>
+          <path d="M18.9 19.4c0-2.5-1-4.6-2.7-5.7"/>
+        </svg>
+      </span>
+      <span class="wt-ico is-on">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="9.9" cy="8.6" r="3.4"/>
+          <path d="M3.3 19.5c0-3.5 3-6.1 6.6-6.1s6.6 2.6 6.6 6.1z"/>
+          <path d="M16.7 5.5a3.1 3.1 0 0 1 0 6.1z"/>
+          <path d="M18.9 19.5c0-2.6-1-4.7-2.8-5.9 2.8.2 4.9 2.6 4.9 5.9z"/>
+        </svg>
+      </span>
+      <span class="wt-label">通讯录</span>
+      <em class="wt-badge" id="tabBadgeContacts" hidden>0</em>
+    </button>
+    <button class="wx-tab" data-tab="discover">
+      <span class="wt-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="8.3"/>
+          <path d="M15.7 8.3l-2.3 5.1-5.1 2.3 2.3-5.1z"/>
+        </svg>
+      </span>
+      <span class="wt-ico is-on">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6zm0 1.7a7.1 7.1 0 0 1 7.1 7.1 7.1 7.1 0 0 1-7.1 7.1 7.1 7.1 0 0 1-7.1-7.1A7.1 7.1 0 0 1 12 4.9z"/>
+          <path d="M15.9 8.1l-2.4 5.4-5.4 2.4 2.4-5.4z"/>
+        </svg>
+      </span>
+      <span class="wt-label">发现</span>
+      <em class="wt-badge" id="tabBadgeMoments" hidden>0</em>
+    </button>
+    <button class="wx-tab" data-tab="me">
+      <span class="wt-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="7.3" r="3.95"/>
+          <path d="M8.7 13.2c-3 1.1-4.8 3.2-4.8 6h16.2c0-2.8-1.8-4.9-4.8-6"/>
+        </svg>
+      </span>
+      <span class="wt-ico is-on">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="7.2" r="4.15"/>
+          <path d="M12 12.6c-1.2 0-2.3.22-3.3.62-2.9 1.1-4.7 3.2-4.7 5.88 0 .6.48 1.1 1.1 1.1h13.8c.62 0 1.1-.5 1.1-1.1 0-2.68-1.8-4.78-4.7-5.88-1-.4-2.1-.62-3.3-.62z"/>
+        </svg>
+      </span>
+      <span class="wt-label">我</span>
+    </button>
+  </nav>
+</div>
+
+<div class="wx-toast" id="toast" hidden></div>
+<div class="wx-sheet" id="sheet" hidden><div class="ws-box" id="sheetBox"></div></div>
+<!-- 礼物刷屏特效：收到 / 送出礼物时铺满整屏，像微信那样 -->
+<div class="wx-flood" id="giftFlood" hidden><div class="gf-inner" id="giftFloodInner"></div></div>
+<!-- 登录过场：那颗彩色球转着进 App -->
+<div class="boot-mask" id="bootSplash" hidden><span class="boot-ball"></span></div>
+<!-- 下拉刷新提示（就地刷新，不跳页） -->
+<div class="ptr" id="ptr">
+  <span class="ptr-ball"></span>
+</div>
+<!-- 断线提示条：网络断了/服务器重连时挂在最上面 -->
+<div class="net-bar" id="netBar" hidden>网络连接已断开，正在重新连接…</div>
+<!-- 有新版本时挂的提示条（点一下就刷新） -->
+<div class="net-bar is-ver" id="verBar" hidden>有新版本，点这里刷新</div>
+<!-- 朋友圈大图：左右滑动看多张 -->
+<!-- 朋友圈三点按钮：在按钮左边弹出的小气泡（赞 / 评论 / 删除） -->
+<div class="mm-mask" id="mmMask" hidden><div class="mm-pop" id="mmPop"></div></div>
+<!-- 转账说明：半屏面板，可以向下滑关闭 -->
+<div class="nt-mask" id="ntMask" hidden>
+  <div class="nt-sheet" id="ntSheet">
+    <div class="nt-grab" id="ntGrab"><span></span></div>
+    <div class="nt-head">
+      <span class="nt-title">转账说明</span>
+      <button class="nt-done" id="ntDone">完成</button>
+    </div>
+    <div class="nt-input-wrap">
+      <input id="ntInput" maxlength="60" placeholder="添加转账说明">
+      <span class="nt-count" id="ntCount">0/60</span>
+    </div>
+    <p class="nt-hint">收付款双方可见，最多 60 个字。</p>
+  </div>
+</div>
+<!-- 转账确认：点「转账」→ 中间彩球加载 2 秒 → 半屏确认面板（按住顶部往下拖可关闭） -->
+<div class="boot-mask" id="payLoad" hidden><span class="boot-ball"></span></div>
+<div class="pay-mask" id="payMask" hidden>
+  <div class="pay-sheet" id="paySheet">
+    <div class="pay-head" id="payHead">
+      <button class="pay-x" id="payX" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M5.8 5.8l12.4 12.4M18.2 5.8L5.8 18.2"/></svg>
+      </button>
+      <button class="pay-face" id="payFace">使用面容</button>
+    </div>
+    <div class="pay-to" id="payTo">向 好友转账</div>
+    <div class="pay-sum" id="paySum">¥0.00</div>
+    <div class="pay-way">
+      <span class="pay-way-label">付款方式</span>
+      <button class="pay-way-change" id="payChange">更改
+        <svg class="pay-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 5.6l6.4 6.4-6.4 6.4"/></svg>
+      </button>
+    </div>
+    <div class="pay-method" id="payMethod">
+      <span class="pay-m-ico" id="payMIcon"></span>
+      <span class="pay-m-txt">
+        <span class="pay-m-name" id="payMName">余额</span>
+        <span class="pay-m-sub" id="payMSub">¥0.00</span>
+      </span>
+      <span class="pay-m-tick">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 12.7l4.7 4.7 9.5-10.4"/></svg>
+      </span>
+    </div>
+    <div class="pay-pwd-wrap">
+      <div class="pay-pwd" id="payPwd">
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+        <span class="pay-pwd-cell"></span>
+      </div>
+      <button class="pay-pwd-tip" id="payPwdTip">请输入 6 位支付密码</button>
+    </div>
+    <div class="pay-pad" id="payPad">
+      <button class="pay-key" data-pk="1">1</button>
+      <button class="pay-key" data-pk="2">2</button>
+      <button class="pay-key" data-pk="3">3</button>
+      <button class="pay-key" data-pk="4">4</button>
+      <button class="pay-key" data-pk="5">5</button>
+      <button class="pay-key" data-pk="6">6</button>
+      <button class="pay-key" data-pk="7">7</button>
+      <button class="pay-key" data-pk="8">8</button>
+      <button class="pay-key" data-pk="9">9</button>
+      <span class="pay-key is-ghost"></span>
+      <button class="pay-key" data-pk="0">0</button>
+      <button class="pay-key is-ghost is-del" data-pk="del" aria-label="删除">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.2 5.4h9.3a2.6 2.6 0 0 1 2.6 2.6v8a2.6 2.6 0 0 1-2.6 2.6H9.2L2.9 12z"/><path d="M12.7 9.6l4.8 4.8M17.5 9.6l-4.8 4.8"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pay-safe"></div>
+  </div>
+</div>
+<!-- 付款方式：点「更改」弹出来的半高面板（按住顶部往下拖可关闭） -->
+<div class="pm-mask" id="pmMask" hidden>
+  <div class="pm-sheet" id="pmSheet">
+    <div class="pm-head" id="pmHead">
+      <span class="pm-title">付款方式</span>
+      <button class="pm-x" id="pmX" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M5.8 5.8l12.4 12.4M18.2 5.8L5.8 18.2"/></svg>
+      </button>
+    </div>
+    <div class="pm-list" id="pmList"></div>
+    <button class="pm-recharge" id="pmRecharge">充值余额</button>
+    <div class="pm-safe"></div>
+  </div>
+</div>
+<!-- 朋友圈评论：跟聊天一样，直接在底部输入 -->
+<div class="cmt-bar" id="cmtBar" hidden>
+  <input id="cmtInput" placeholder="评论" autocomplete="off">
+  <button class="cmt-send" id="cmtSend">发送</button>
+</div>
+<div class="ph-view" id="phView" hidden>
+  <div class="ph-bar">
+    <span class="ph-count" id="phCount">1 / 1</span>
+  </div>
+  <div class="ph-track" id="phTrack"></div>
+</div>
+<!-- 朋友圈点相机按钮弹出来的面板：照飞信里那张参考图
+     量出来的尺寸：第一行「拍摄/照片或视频」72、第二行「从手机相册选择」54、
+     中间 8px 灰缝、下面「取消」56 + 底部安全区；三行都是白底、字居中，行间一条发丝线。 -->
+<div class="pub-mask" id="pubMask" hidden>
+  <div class="pub-sheet">
+    <label class="pub-item is-shoot" for="momentCam" id="pubShoot">
+      <span class="pub-t1">拍摄</span>
+      <span class="pub-t2">照片或视频</span>
+    </label>
+    <label class="pub-item" for="momentPics" id="pubGallery">
+      <span class="pub-t1">从手机相册选择</span>
+    </label>
+    <div class="pub-gap"></div>
+    <button class="pub-cancel" id="pubCancel">取消</button>
+  </div>
+</div>
+<!-- 改名 / 地区 / 签名 用的小输入框 -->
+<div class="ask-mask" id="askMask" hidden>
+  <div class="ask-box">
+    <div class="ask-title" id="askTitle">修改</div>
+    <input class="ask-input" id="askInput" maxlength="24" autocomplete="off">
+    <div class="ask-btns">
+      <button class="ask-btn" id="askCancel">取消</button>
+      <button class="ask-btn is-primary" id="askOk">保存</button>
+    </div>
+  </div>
+</div>
+<!-- 这几个选择框用视觉隐藏（不是 display:none），手机上点 label 能直接唤起相册 -->
+<!-- 语音 / 视频通话（手机端，全屏通话界面） -->
+<div class="wx-call" id="callScreen" hidden>
+  <video class="wc-remote" id="callRemote" autoplay playsinline></video>
+  <div class="wc-shade"></div>
+  <div class="wc-head">
+    <div class="wc-avatar" id="callAvatar"></div>
+    <div class="wc-name" id="callName">—</div>
+    <div class="wc-status" id="callStatus"></div>
+    <div class="wc-timer" id="callTimer" hidden>00:00</div>
+  </div>
+  <video class="wc-local" id="callLocal" autoplay playsinline muted hidden></video>
+  <div class="wc-actions">
+    <button class="wc-btn" id="callMute" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a2.8 2.8 0 0 1 2.8 2.8v5.4a2.8 2.8 0 1 1-5.6 0V6.3A2.8 2.8 0 0 1 12 3.5z"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.8V21"/><path d="M3.6 3.6l16.8 16.8"/></svg>
+      <span>静音</span>
+    </button>
+    <button class="wc-btn" id="callCam" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.4" width="12.6" height="11.2" rx="2.6"/><path d="M15.6 10.6l5.4-3.2v9.2l-5.4-3.2z"/></svg>
+      <span>摄像头</span>
+    </button>
+    <button class="wc-btn" id="callFlip" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-13.3 6"/><path d="M4 12a8 8 0 0 1 13.3-6"/><path d="M4 20v-4h4"/><path d="M20 4v4h-4"/></svg>
+      <span>翻转</span>
+    </button>
+    <button class="wc-btn is-hang" id="callHangup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 14.8c4.6-4.2 10.6-4.2 15.2 0"/><path d="M8.5 13.6l-1.1 3.3a1 1 0 0 1-1.3.6l-2.3-.9a1 1 0 0 1-.6-1.2l.7-2.4"/><path d="M15.5 13.6l1.1 3.3a1 1 0 0 0 1.3.6l2.3-.9a1 1 0 0 0 .6-1.2l-.7-2.4"/></svg>
+      <span>挂断</span>
+    </button>
+    <button class="wc-btn is-answer" id="callAccept" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 14.8c4.6-4.2 10.6-4.2 15.2 0"/><path d="M8.5 13.6l-1.1 3.3a1 1 0 0 1-1.3.6l-2.3-.9a1 1 0 0 1-.6-1.2l.7-2.4"/><path d="M15.5 13.6l1.1 3.3a1 1 0 0 0 1.3.6l2.3-.9a1 1 0 0 0 .6-1.2l-.7-2.4"/></svg>
+      <span>接听</span>
+    </button>
+  </div>
+</div>
+
+<!-- 聊天发图 / 换封面 / 换聊天背景：同样写具体格式，点一下直接进相册，少一层系统选择框 -->
+<input type="file" class="file-input" id="plusFile" accept="image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,image/tiff,image/bmp">
+<input type="file" class="file-input" id="coverFile" accept="image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,image/tiff,image/bmp">
+<input type="file" class="file-input" id="chatBgFile" accept="image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,image/tiff,image/bmp">
+<!-- 朋友圈「从手机相册选择」：accept 写成具体的图片格式（不是 image/* 这种通配），
+     iPhone 就会直接跳进相册，不再多弹一层「照片图库 / 拍照 / 浏览」的选择框 -->
+<input type="file" class="file-input" id="momentPics" accept="image/jpeg,image/png,image/heic,image/heif,image/webp,image/gif,image/tiff,image/bmp" multiple>
+<input type="file" class="file-input" id="momentCam" accept="image/*" capture="environment">
+
+<script src="m.js?v=4"></script>
+</body>
+</html>

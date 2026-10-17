@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理后台 · CHRIS Chat</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231d1d1f' d='M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="admin-classic.css">
+<!-- 主题初始化：在任何内容渲染前应用，避免闪白 -->
+<script>
+(function () {
+  try {
+    var m = localStorage.getItem('chris-theme') || 'light';
+    var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var t = m === 'system' ? (sysDark ? 'dark' : 'light') : m;
+    if (!m) t = 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.style.colorScheme = t;
+  } catch (e) {}
+})();
+</script>
+
+</head>
+<body class="admin-body">
+
+<!-- ------------------------------------------------------------ 登录 -->
+<div class="login-gate" id="loginGate" hidden>
+  <div class="login-card">
+    <div class="login-mark">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+    </div>
+    <h1 class="login-title">管理后台</h1>
+    <p class="login-sub">CHRIS Chat · 请输入管理员密码</p>
+    <form id="loginForm" novalidate>
+      <div class="login-field">
+        <svg class="login-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4"/><path d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6"/></svg>
+        <input type="password" id="loginPassword" placeholder="管理员密码" autocomplete="current-password">
+        <button type="button" class="pw-toggle" id="pwToggle" title="显示密码">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 12S6 5.8 12 5.8 21.4 12 21.4 12 18 18.2 12 18.2 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="2.9"/></svg>
+        </button>
+      </div>
+      <p class="login-error" id="loginError" hidden></p>
+      <button type="submit" class="btn-primary btn-block" id="loginBtn">登录</button>
+    </form>
+    <p class="login-hint" id="loginHint">
+      默认密码 <code>chris888</code>。密码存在 <code>data/admin.json</code>（scrypt 哈希，无明文）。
+    </p>
+  </div>
+</div>
+
+<!-- ------------------------------------------------------------ 主体 -->
+<div id="adminShell" hidden>
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg>
+        <span>CHRIS Chat</span>
+        <span class="badge-pill">管理后台</span>
+      </div>
+      <span class="conn" id="connState">连接中…</span>
+      <div class="theme-seg" id="themeSeg">
+            <button type="button" data-theme-opt="light" title="浅色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></svg></button>
+            <button type="button" data-theme-opt="dark" title="深色"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20.6 14.4A8.7 8.7 0 0 1 9.6 3.4a8.7 8.7 0 1 0 11 11z"/></svg></button>
+            <button type="button" data-theme-opt="system" title="跟随系统"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></svg></button>
+          </div>
+      <button class="btn-ghost" id="refreshBtn">刷新</button>
+      <button class="btn-ghost" id="logoutBtn">退出</button>
+      <a class="btn-ghost" href="/" target="_blank">打开前台</a>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="stats" id="stats"></section>
+
+    <nav class="tabs">
+      <button class="tab is-active" data-tab="users">用户</button>
+      <button class="tab" data-tab="moments">朋友圈</button>
+      <button class="tab" data-tab="chats">会话</button>
+      <button class="tab" data-tab="broadcast">系统公告</button>
+      <button class="tab" data-tab="branding">界面图标</button>
+      <button class="tab" data-tab="pluspanel">＋ 面板</button>
+      <button class="tab" data-tab="gifts">礼物</button>
+      <button class="tab" data-tab="stickers">表情包</button>
+      <button class="tab" data-tab="statuses">状态</button>
+      <button class="tab" data-tab="system">系统信息</button>
+    </nav>
+
+    <section class="panel" data-panel="users">
+      <div class="panel-head">
+        <h2>用户管理</h2>
+        <input id="userSearch" type="search" placeholder="搜索用户名或昵称">
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>用户</th><th>实名</th><th>性别</th><th>状态</th><th>余额 / 充值</th><th>单笔转账限额</th><th class="num">好友</th><th class="num">动态</th><th class="num">会话</th><th>注册时间</th><th class="num">操作</th></tr>
+          </thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="userEmpty" hidden>没有用户</p>
+    </section>
+
+    <section class="panel" data-panel="moments" hidden>
+      <div class="panel-head"><h2>朋友圈内容</h2><span class="hint" id="momentCount"></span></div>
+      <div id="momentRows"></div>
+      <p class="empty" id="momentEmpty" hidden>还没有动态</p>
+    </section>
+
+    <section class="panel" data-panel="chats" hidden>
+      <div class="panel-head"><h2>会话</h2><span class="hint" id="chatCount"></span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>类型</th><th>成员</th><th class="num">消息数</th><th>最后一条</th><th class="num">操作</th></tr>
+          </thead>
+          <tbody id="chatRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="chatEmpty" hidden>还没有会话</p>
+    </section>
+
+    <section class="panel" data-panel="broadcast" hidden>
+      <div class="panel-head"><h2>系统公告</h2></div>
+      <p class="hint">发一条公告，会作为系统消息推送到所有会话，在线用户实时看到。</p>
+      <label class="field">
+        <span class="field-label">公告内容</span>
+        <textarea id="broadcastText" rows="3" maxlength="300" placeholder="例如：今晚 22:00 服务器维护，预计 10 分钟。"></textarea>
+      </label>
+      <button class="btn-primary" id="broadcastBtn">发送公告</button>
+      <h3 class="sub-title">历史公告</h3>
+      <div id="announcementList"></div>
+    </section>
+
+    <section class="panel" data-panel="branding" hidden>
+      <div class="panel-head">
+        <h2>界面图标与应用名</h2>
+        <span class="hint">保存后立刻对所有在线用户生效，不用他们刷新</span>
+      </div>
+
+      <label class="field">
+        <span class="field-label">应用名称</span>
+        <input id="brandName" maxlength="30" placeholder="CHRIS Chat">
+      </label>
+
+      <div class="field">
+        <span class="field-label">应用图标（登录页 Logo + 浏览器标签页图标）</span>
+        <div class="icon-grid">
+          <div class="icon-slot">
+            <div class="icon-preview" id="iconPreview-logo"><span>默认</span></div>
+            <div class="icon-name">应用图标</div>
+            <div class="icon-actions">
+              <button class="mini" data-upload="logo">上传</button>
+              <button class="mini danger" data-clear="logo">清除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub-title">左侧竖栏图标</h3>
+      <div class="icon-grid" id="iconGrid"></div>
+
+      <h3 class="sub-title">默认聊天背景</h3>
+      <div class="icon-grid">
+        <div class="icon-slot">
+          <div class="icon-preview" id="iconPreview-chatbg"><span>默认</span></div>
+          <div class="icon-name">聊天背景</div>
+          <div class="icon-actions">
+            <button class="mini" data-upload="chatBackground">上传</button>
+            <button class="mini" data-auto="chatBackground">跟随系统</button>
+            <button class="mini danger" data-clear="chatBackground">清除</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">用户自己设置过聊天背景时以用户的为准；没设置过就用这里的。建议用竖向或大尺寸图片。</p>
+
+      <h3 class="sub-title">启动页图片</h3>
+      <div class="icon-grid">
+        <div class="icon-slot">
+          <div class="icon-preview" id="iconPreview-splash"><span>默认</span></div>
+          <div class="icon-name">启动页</div>
+          <div class="icon-actions">
+            <button class="mini" data-upload="splash">上传</button>
+            <button class="mini danger" data-clear="splash">清除</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">App 一启动铺满整屏的那张图。换完不用重新出包：App 下次打开就生效（第一次可能还是旧图，图下载完从第二次起就是新的）。不传就用包里自带的那张兜底。</p>
+
+      <h3 class="sub-title">字体</h3>
+      <div class="font-row">
+        <label class="field">
+          <span class="field-label">预设字体</span>
+          <select id="fontPreset">
+            <option value="">默认 · QQ 同款（Segoe UI + 微软雅黑 UI）</option>
+            <option value='"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",Arial,sans-serif'>QQ 同款（Segoe UI + 微软雅黑）</option>
+            <option value='"PingFang SC","Hiragino Sans GB","Noto Sans SC"'>苹方 / 冬青黑（苹果风）</option>
+            <option value='"Source Han Sans SC","Noto Sans SC"'>思源黑体</option>
+            <option value='"DengXian","Microsoft YaHei UI"'>等线 DengXian</option>
+            <option value='"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun"'>思源宋体 / 宋体（衬线）</option>
+            <option value="custom">自定义 font-family…</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">自定义 font-family（选「自定义」时生效）</span>
+          <input id="fontCustom" placeholder='"LXGW WenKai", "Noto Sans SC", serif' disabled>
+        </label>
+      </div>
+
+      <div class="font-upload">
+        <button class="mini" data-upload="font">上传字体文件</button>
+        <span class="hint" id="fontFileLabel">未上传字体文件</span>
+        <button class="mini danger" data-clear="font">清除字体文件</button>
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" hidden>
+      </div>
+
+      <div class="font-preview" id="fontPreview">预览：前端界面文字 The quick brown fox 0123456789</div>
+      <p class="hint">支持 .ttf / .otf / .woff / .woff2，建议不超过 15MB。上传的字体自动成为首选，上面选的预设作为后备字体。</p>
+      <p class="hint">建议用 64×64 或 128×128 的透明底 PNG，界面里会缩放到 21×21 显示。清空某个图标就恢复成默认的。</p>
+
+      <h3 class="sub-title">字号大小</h3>
+      <div class="font-row">
+        <label class="field">
+          <span class="field-label">界面字号</span>
+          <select id="fontScale">
+            <option value="0.9">小 · 90%</option>
+            <option value="1">标准 · 100%</option>
+            <option value="1.08">大 · 108%</option>
+            <option value="1.16">特大 · 116%</option>
+            <option value="1.25">超大 · 125%</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">或者自己填倍数（0.8 ~ 1.4）</span>
+          <input id="fontScaleCustom" type="number" min="0.8" max="1.4" step="0.02" placeholder="留空就用上面的选项">
+        </label>
+      </div>
+      <p class="hint">字号会等比例放大聊天文字、昵称、按钮和菜单文字，布局不受影响。</p>
+
+      <h3 class="sub-title">语音通话（ICE 服务器）</h3>
+      <label class="field">
+        <span class="field-label">留空就用默认的公共 STUN；跨网络通话连不上时，在这里填自己的 TURN</span>
+        <textarea id="iceServers" rows="3" placeholder="每行一个，例如：stun:stun.l.google.com:19302 / turn:turn.example.com:3478，也可以直接粘 JSON"></textarea>
+      </label>
+      <p class="hint">同一台电脑 / 同一个局域网不用配也能通；不同网络（一个在家一个在公司）必须有 TURN 才能打通，否则会卡在「连接中」然后提示超时。</p>
+
+      <h3 class="sub-title">界面配色</h3>
+      <div class="color-line">
+        <span class="field-label">主色调（自己的气泡 / 按钮 / 选中状态）</span>
+        <div class="swatches" id="accentSwatches"></div>
+        <label class="color-pick"><input type="color" id="accentPick" value="#0099ff"><span>自定义</span></label>
+      </div>
+      <div class="color-line">
+        <span class="field-label">文字颜色（浅色模式；深色模式保持默认浅色字）</span>
+        <div class="swatches" id="textSwatches"></div>
+        <label class="color-pick"><input type="color" id="textPick" value="#0f1115"><span>自定义</span></label>
+      </div>
+      <div class="theme-preview" id="themePreview">
+        <span class="tp-bubble" id="tpBubble">自己的气泡</span>
+        <span class="tp-bubble tp-other" id="tpOther">对方的气泡</span>
+        <button class="tp-btn" id="tpBtn" type="button">按钮</button>
+        <span class="tp-text" id="tpText">正文文字效果</span>
+      </div>
+      <p class="hint" id="colorHint"></p>
+
+
+      <div class="row-actions" style="justify-content:flex-start; margin-top: 16px">
+        <button class="btn-primary" id="saveBrandingBtn">保存并推送</button>
+        <button class="btn-ghost" id="resetBrandingBtn">全部恢复默认</button>
+      </div>
+      <input type="file" id="iconFile" accept="image/*" hidden>
+    </section>
+
+    <section class="panel" data-panel="system" hidden>
+      <div class="panel-head"><h2>系统信息</h2></div>
+      <div class="kv" id="systemInfo"></div>
+    </section>
+
+    <section class="panel" data-panel="pluspanel" hidden>
+      <div class="panel-head">
+        <h2>聊天「＋」面板</h2>
+        <span class="hint">手机版聊天输入栏点「＋」弹出来的那一页；顺序就是这里的顺序，每 8 个自动分一页，前台上可以左右滑动翻页。保存后在线用户立刻生效。</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="num" style="width:52px">顺序</th>
+              <th style="width:180px">名称（最多 12 字）</th>
+              <th style="width:170px">图标</th>
+              <th style="width:180px">点击后的动作</th>
+              <th class="num" style="width:64px">启用</th>
+              <th class="num" style="width:190px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="plusRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="plusEmpty" hidden>这一页是空的，点下面的「添加一项」加一个</p>
+      <div class="row-actions" style="justify-content:flex-start; margin-top: 16px">
+        <button class="btn-ghost" id="plusAddBtn">＋ 添加一项</button>
+        <button class="btn-primary" id="plusSaveBtn">保存并推送</button>
+        <button class="btn-ghost" id="plusResetBtn">恢复默认</button>
+      </div>
+      <p class="hint" id="plusHint"></p>
+    </section>
+
+    <section class="panel" data-panel="gifts" hidden>
+      <div class="panel-head">
+        <h2>礼物管理</h2>
+        <span class="hint">这里加的礼物会出现在聊天「＋ → 礼物」面板里；前台按分类分页，每页 8 个。改完点「保存并推送」，在线用户立刻生效。</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="num" style="width:52px">顺序</th>
+              <th style="width:170px">礼物名称</th>
+              <th style="width:210px">图标</th>
+              <th class="num" style="width:110px">价格（金币）</th>
+              <th style="width:130px">分类</th>
+              <th class="num" style="width:64px">上架</th>
+              <th class="num" style="width:190px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="giftRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="giftEmpty" hidden>还没有礼物，点下面的「添加礼物」加一个</p>
+      <datalist id="giftCats"></datalist>
+      <div class="row-actions" style="justify-content:flex-start; margin-top: 16px">
+        <button class="btn-ghost" id="giftAddBtn">＋ 添加礼物</button>
+        <button class="btn-primary" id="giftSaveBtn">保存并推送</button>
+        <button class="btn-ghost" id="giftResetBtn">恢复默认礼物</button>
+      </div>
+      <p class="hint" id="giftHint"></p>
+    </section>
+
+    <section class="panel" data-panel="stickers" hidden>
+      <div class="panel-head">
+        <h2>表情包</h2>
+        <span class="hint">前台「我 → 表情」里显示的表情包。第三方平台默认关闭，接口已经留好，需要的时候填上 Key 再打开即可。</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="num" style="width:52px">顺序</th>
+              <th style="width:140px">表情包名</th>
+              <th style="width:100px">封面</th>
+              <th class="num" style="width:64px">上架</th>
+              <th>表情（一行一个：emoji 或图片网址）</th>
+              <th class="num" style="width:170px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="stickerRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="stickerEmpty" hidden>还没有表情包，点下面的「添加表情包」建一个</p>
+      <div class="row-actions" style="justify-content:flex-start; margin-top: 16px">
+        <button class="btn-ghost" id="stickerAddBtn">＋ 添加表情包</button>
+        <button class="btn-primary" id="stickerSaveBtn">保存并推送</button>
+        <button class="btn-ghost" id="stickerResetBtn">恢复默认表情包</button>
+      </div>
+
+      <h3 class="sub-title">第三方表情平台（接口先留着，默认不接）</h3>
+      <div class="field">
+        <span class="field-label">服务商</span>
+        <select class="plus-select" id="tpProvider" style="max-width: 300px">
+          <option value="off">关闭（只用本地表情包）</option>
+          <option value="tenor">Tenor（Google，需要 API Key）</option>
+          <option value="giphy">Giphy（需要 API Key）</option>
+          <option value="custom">自定义接口</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="field-label">API Key</span>
+        <input class="plus-input" id="tpKey" maxlength="200" placeholder="留空 = 不接第三方" style="max-width: 420px">
+      </div>
+      <div class="field">
+        <span class="field-label">自定义接口地址（可用 {q} {key} {limit} 占位）</span>
+        <input class="plus-input" id="tpUrl" maxlength="500" placeholder="https://example.com/api/search?q={q}&key={key}&limit={limit}" style="max-width: 520px">
+      </div>
+      <div class="field">
+        <span class="field-label">每次返回条数</span>
+        <input class="plus-input" id="tpLimit" type="number" min="4" max="50" style="max-width: 120px">
+      </div>
+      <div class="row-actions" style="justify-content: flex-start">
+        <button class="btn-ghost" id="tpTestBtn">测试一下</button>
+        <button class="btn-primary" id="tpSaveBtn">保存第三方设置</button>
+      </div>
+      <p class="hint" id="tpHint">接口地址：GET /api/stickers（前台取表情包）、GET /api/stickers/search?q=关键词（第三方搜索）、GET/PUT /api/admin/stickers（本页读写）</p>
+    </section>
+
+    <section class="panel" data-panel="statuses" hidden>
+      <div class="panel-head">
+        <h2>状态</h2>
+        <span class="hint">前台「我 → ＋ 状态」里的那些状态；一个分类一栏，状态按「图标 名称」一行一个写，改完点「保存并推送」，在线用户立刻生效。</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="num" style="width:52px">顺序</th>
+              <th style="width:150px">分类名</th>
+              <th style="width:110px">主题色</th>
+              <th class="num" style="width:64px">上架</th>
+              <th>状态（一行一个，写成「😄 美滋滋」）</th>
+              <th class="num" style="width:170px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="statusRows"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="statusEmpty" hidden>还没有分类，点下面的「添加分类」建一个</p>
+      <div class="row-actions" style="justify-content: flex-start; margin-top: 16px">
+        <button class="btn-ghost" id="statusAddBtn">＋ 添加分类</button>
+        <button class="btn-primary" id="statusSaveBtn">保存并推送</button>
+        <button class="btn-ghost" id="statusResetBtn">恢复默认</button>
+      </div>
+      <p class="hint" id="statusHint">接口：GET /api/statuses（前台取）、GET/PUT /api/admin/statuses（本页读写）</p>
+    </section>
+  </main>
+</div>
+
+<div class="modal-mask" id="modalMask" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">会话内容</h3>
+      <button class="btn-ghost" id="modalClose">关闭</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="admin.js" charset="utf-8"></script>
+</body>
+</html>

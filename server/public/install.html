@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>把 CHRIS 聊天装到手机上</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07C160">
+<style>
+  :root { --green: #07C160; --ink: #191919; --gray: #707070; --line: #E5E5EA; --bg: #F7F7F7; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 40px);
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  header { text-align: center; padding: 36px 0 22px; }
+  header img { width: 92px; height: 92px; border-radius: 22px; box-shadow: 0 10px 26px rgba(0,0,0,.16); }
+  h1 { font-size: 21px; font-weight: 500; margin: 16px 0 6px; }
+  .sub { color: var(--gray); font-size: 13.5px; }
+  .card { background: #fff; border-radius: 14px; padding: 16px 16px 6px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { font-size: 15px; font-weight: 500; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .tag { font-size: 11px; font-weight: 400; color: #fff; background: var(--green); border-radius: 6px; padding: 1px 6px; }
+  .card h2 .tag.android { background: #3ddc84; color: #08321c; }
+  ol { margin: 0; padding-left: 20px; }
+  ol li { margin-bottom: 10px; }
+  .url {
+    display: block; margin: 4px 0 14px; padding: 12px 14px; background: #F2F2F7; border-radius: 10px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13.5px; color: #1C1C1E;
+    word-break: break-all; text-decoration: none;
+  }
+  .btn {
+    display: block; text-align: center; text-decoration: none; margin: 18px 0 10px;
+    background: var(--green); color: #fff; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 500;
+  }
+  .note { color: var(--gray); font-size: 12.5px; margin: 10px 0 0; }
+  code { background: #EDEDF0; border-radius: 5px; padding: 1px 5px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icon-192.png" alt="CHRIS Chat">
+  <h1>把 CHRIS 聊天装到手机上</h1>
+  <div class="sub">装完就是独立图标，点开全屏，和普通 App 一样</div>
+</header>
+
+<div class="card">
+  <h2><span class="tag">iPhone / iPad</span> 添加到主屏幕</h2>
+  <ol>
+    <li>用 <b>Safari</b> 打开下面这个地址（一定要用 https 的）：
+      <a class="url" href="https://192.168.2.7:5443/m.html">https://192.168.2.7:5443/m.html</a>
+    </li>
+    <li>第一次会提示"此连接非私人连接"→ 点 <b>显示详细信息</b> → <b>访问此网站</b>（只有第一次要这样）</li>
+    <li>点屏幕底部中间的 <b>分享</b> 按钮（方框 + 向上箭头）</li>
+    <li>往下滑，选 <b>添加到主屏幕</b> → 右上角 <b>添加</b></li>
+    <li>回桌面就能看到绿色聊天图标，点开即是全屏 App</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2><span class="tag android">安卓</span> 安装应用</h2>
+  <ol>
+    <li>用 <b>Chrome</b> 打开：<a class="url" href="https://192.168.2.7:5443/m.html">https://192.168.2.7:5443/m.html</a></li>
+    <li>第一次提示证书不安全，点 <b>高级</b> → <b>继续前往</b></li>
+    <li>点右上角 <b>⋮</b> → <b>安装应用</b> / <b>添加到主屏幕</b></li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>说明</h2>
+  <p class="note">
+    · 语音 / 视频通话必须用 <code>https://192.168.2.7:5443</code> 打开，浏览器只允许安全页面用麦克风和摄像头。<br>
+    · 电脑版地址不变：<code>http://192.168.2.7:5180/</code>。<br>
+    · 手机要和电脑连同一个 Wi-Fi。
+  </p>
+</div>
+
+<a class="btn" href="https://192.168.2.7:5443/m.html">直接打开手机版</a>
+<p class="note" style="text-align:center">装成图标后，以后不用再输地址，点桌面图标直接进</p>
+</body>
+</html>

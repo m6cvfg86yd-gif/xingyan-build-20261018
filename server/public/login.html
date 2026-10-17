@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Luchat · 登录</title>
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2307C160'/%3E%3Cpath d='M12 5C8.1 5 5 7.5 5 10.6c0 1.8 1 3.4 2.6 4.4L7 18l2.7-1.4c.7.1 1.5.2 2.3.2 3.9 0 7-2.5 7-5.6S15.9 5 12 5z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --txt:#15171a; --sub:#969ba3;
+    --line:#eef0f3; --acc:#07C160; --acc-press:#06ad56;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1012; --card:#1b1c1f; --txt:#eef1f5; --sub:#8b9099; --line:#26282c; }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:max(26px,env(safe-area-inset-top)) 20px max(26px,env(safe-area-inset-bottom));
+    min-height:100dvh;position:relative;overflow-x:hidden;
+  }
+  /* 顶部一层极淡的主色柔光：背景不再是死板纯色块，看着更高级 */
+  body::before{
+    content:'';position:fixed;left:-30%;right:-30%;top:-14%;height:52vh;pointer-events:none;
+    background:radial-gradient(50% 50% at 50% 40%, var(--acc), transparent 72%);
+    opacity:.10;
+  }
+  .box{width:100%;max-width:356px;position:relative}
+
+  /* ── 品牌区 ─────────────────────────────── */
+  .top{text-align:center;margin-bottom:26px}
+  .icon{
+    width:74px;height:74px;border-radius:50%;margin:0 auto 16px;overflow:hidden;
+    background:var(--acc);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 24px rgba(12,20,35,.12);
+  }
+  .icon svg{width:40px;height:40px;fill:#fff}
+  .icon img{width:100%;height:100%;object-fit:cover;border-radius:50%!important}
+  h1{margin:0;font-size:21px;font-weight:600;letter-spacing:.2px}
+  .sub{margin:7px 0 0;font-size:13px;color:var(--sub)}
+  /* 头像一键登录：头像能点、点了有反馈 */
+  .icon{cursor:pointer;transition:transform .16s ease}
+  .icon:active{transform:scale(.94)}
+  .quick{
+    display:none;margin:10px auto 0;width:max-content;max-width:100%;
+    padding:2px 0;font-size:12.5px;color:var(--acc);opacity:.9;
+  }
+  .quick.on{display:block;animation:pin .24s ease both}
+
+  /* ── 登录 / 注册 ────────────────────────── */
+  .tabs{display:flex;justify-content:center;gap:32px;margin:0 0 18px}
+  .tabs button{
+    border:0;background:none;padding:2px 2px 9px;color:var(--sub);
+    font:inherit;font-size:15px;cursor:pointer;position:relative;transition:color .15s;
+  }
+  .tabs button.on{color:var(--txt);font-weight:600}
+  .tabs button.on::after{
+    content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    width:22px;height:3px;border-radius:2px;background:var(--acc);
+  }
+
+  /* ── 输入区：不要外框，只留一条细分隔线 ──── */
+  .card{background:none;border-radius:0;box-shadow:none;overflow:visible}
+  .f{
+    display:flex;align-items:center;min-height:58px;padding:0 2px;
+    border-bottom:1px solid var(--line);transition:border-color .18s;
+  }
+  .f:last-child{border-bottom:0}
+  .f:focus-within{border-bottom-color:var(--acc)}
+  .f input{
+    flex:1;min-width:0;height:58px;border:0;background:none;color:var(--txt);
+    font:inherit;font-size:16px;outline:none;
+  }
+  .f input::placeholder{color:var(--sub);font-size:15px}
+  .f .mid{
+    border:0;background:none;color:var(--acc);font:inherit;font-size:13.5px;
+    cursor:pointer;padding:8px 0 8px 12px;white-space:nowrap;
+  }
+  .f .mid:disabled{color:var(--sub);cursor:default}
+  .cap{
+    width:92px;height:34px;border-radius:8px;border:0;overflow:hidden;
+    background:var(--line);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex:0 0 auto;margin-left:12px;
+  }
+  .cap svg{width:100%;height:100%;background:#fff}
+
+  /* ── 主按钮 ─────────────────────────────── */
+  .btn{
+    width:100%;height:52px;margin-top:22px;border:0;border-radius:14px;color:#fff;
+    background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 58%),var(--acc);
+    font:inherit;font-size:16px;font-weight:600;cursor:pointer;
+    transition:transform .12s, background .15s, opacity .15s;
+  }
+  .btn:active{transform:scale(.985);background:var(--acc-press)}
+  .btn[disabled]{opacity:.55;cursor:default}
+  .btn.off{opacity:.45}
+
+  /* ── 同意协议勾选（不勾不让登） ─────────── */
+  .agree{
+    display:flex;align-items:flex-start;gap:9px;margin-top:20px;
+    font-size:12.5px;line-height:1.65;color:var(--sub);cursor:pointer;user-select:none;
+  }
+  .agree .box{
+    width:17px;height:17px;border-radius:5px;border:1.4px solid var(--sub);
+    margin-top:1px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    transition:background .15s, border-color .15s;
+  }
+  .agree .box i{
+    width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;
+    transform:rotate(-45deg) scale(.4);opacity:0;margin-top:-2px;transition:.15s;
+  }
+  .agree.on .box{background:var(--acc);border-color:var(--acc)}
+  .agree.on .box i{opacity:1;transform:rotate(-45deg) scale(1)}
+  .agree .lnk{color:var(--acc);text-decoration:none}
+  .agree .lnk:active{opacity:.65}
+
+  /* ── 安全提示 ───────────────────────────── */
+  .secure{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin-top:26px;font-size:11.5px;color:var(--sub);opacity:.85;
+  }
+  .secure svg{width:13px;height:13px;fill:var(--sub);flex:0 0 auto}
+
+/* ── 第三方授权登录（微信 / QQ） ─────────── */
+  .or{display:flex;align-items:center;gap:10px;margin:26px 2px 14px;color:var(--sub);font-size:12px}
+  .or::before,.or::after{content:'';flex:1;height:1px;background:var(--line)}
+  .oauth{display:flex;gap:12px}
+  .oauth button{
+    flex:1;height:46px;border:0;border-radius:12px;font:inherit;font-size:14.5px;font-weight:500;
+    color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:transform .12s,opacity .15s;
+  }
+  .oauth button:active{transform:scale(.985);opacity:.9}
+  .oauth .wx{background:#1AAD19}
+  .oauth .qq{background:#12B7F5}
+  .authbox{margin-top:16px;text-align:center;display:none}
+  .authbox.on{display:block;animation:pin .24s ease both}
+  .authbox .qr{width:168px;height:168px;margin:0 auto 12px;padding:8px;background:#fff;border-radius:12px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05),0 6px 18px rgba(16,24,40,.06)}
+  .authbox .qr svg{width:100%;height:100%;display:block}
+  .authbox .num{font:600 30px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:6px;color:var(--txt);margin-bottom:6px}
+  .authbox .hint2{font-size:12.5px;color:var(--sub);line-height:1.7}
+  .btn .sp{
+    display:none;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
+    border-top-color:#fff;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:8px;
+  }
+  .btn.loading .sp{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── 次要入口 / 底部 ────────────────────── */
+  .tip{margin-top:18px;text-align:center;font-size:13.5px;color:var(--sub)}
+  .tip b{color:var(--acc);cursor:pointer;font-weight:500}
+  .hint{margin:0 2px 12px;font-size:12.5px;color:var(--sub);line-height:1.7;text-align:left}
+  .hint b{display:block;color:var(--txt);font-size:13.5px;margin-bottom:2px}
+  .foot{margin-top:30px;text-align:center;font-size:12px;color:var(--sub);line-height:1.9;opacity:.92}
+  .foot a{color:var(--sub);text-decoration:none}
+  .foot .ub{cursor:pointer}
+  .foot .ub:active{opacity:.6}
+  .foot .dot{margin:0 5px;opacity:.45}
+  .foot .ver{display:block;margin-top:14px;font-size:11px;opacity:.6}
+
+  /* ── 切换时有轻微淡入，别太跳 ───────────── */
+  #paneLogin,#paneReg,#paneUnban{animation:pin .24s ease both}
+  @keyframes pin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ── 弹层 / 提示 ────────────────────────── */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:120}
+  .modal.on{display:flex}
+  .modal-card{background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:76vh;display:flex;flex-direction:column;padding:18px 18px 14px}
+  .modal-card h3{margin:0 0 10px;font-size:17px}
+  .modal-card pre{flex:1;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:0;font:13.5px/1.85 inherit;color:var(--txt);background:transparent}
+  .modal-card button{margin-top:14px;height:46px;border:0;border-radius:12px;background:var(--acc);color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+  .hide{display:none!important}
+  .toast{
+    position:fixed;left:50%;bottom:max(30px,env(safe-area-inset-bottom));transform:translate(-50%,16px);
+    background:rgba(0,0,0,.82);color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.22s;max-width:86vw;text-align:center;z-index:99;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:rgba(230,67,64,.92)}
+
+/* ── 登录滑动验证（拖滑块补缺口） ─────────── */
+.sliderWrap{margin:16px 0 0;user-select:none;-webkit-user-select:none;display:none;animation:sliderIn .22s ease}
+.sliderWrap.show{display:block}
+@keyframes sliderIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.sliderTitle{font-size:13px;font-weight:600;color:var(--txt);margin:0 0 8px}
+.sliderPuzzle{
+  position:relative;overflow:hidden;border-radius:8px;
+  border:1px solid var(--line);background:#e9e9ec;
+}
+.sliderScene{position:absolute;left:0;top:0;width:100%;height:100%}
+.sliderHole{
+  position:absolute;border-radius:6px;background:rgba(0,0,0,.36);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);
+}
+.sliderPiece{
+  position:absolute;border-radius:6px;overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.9);
+}
+.sliderTrack{
+  position:relative;margin-top:10px;border-radius:6px;
+  background:#f2f2f3;border:1px solid var(--line);overflow:hidden;
+}
+.sliderFill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(7,193,96,.16)}
+.sliderHint{
+  position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;color:var(--sub);pointer-events:none;
+}
+.sliderHandle{
+  position:absolute;left:0;top:0;bottom:0;width:44px;border-radius:6px;
+  background:#fff;border:1px solid var(--line);cursor:grab;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--sub);touch-action:none;
+}
+.sliderHandle.done{color:#07c160;cursor:default}
+.sliderWrap.ok .sliderHint{color:#07c160}
+@media (prefers-color-scheme:dark){
+  .sliderTrack{background:#2a2a2c}
+  .sliderHandle{background:#3a3a3c}
+  .sliderPuzzle{background:#2a2a2c}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="top">
+    <div class="icon" id="iconBox"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 5.8 2 10.5c0 2.7 1.5 5.1 3.9 6.6L5 21l4-2.1c1 .2 2 .3 3 .3 5.5 0 10-3.8 10-8.7S17.5 2 12 2z"/></svg></div>
+    <h1 id="brandName">Luchat</h1>
+    <p class="sub" id="headSub">登录后同步最近的聊天记录</p>
+    <div class="quick" id="quickTip">点一下头像，直接进</div>
+  </div>
+
+  <div class="tabs" id="segMain">
+    <button type="button" data-tab="login" class="on">登录</button>
+    <button type="button" data-tab="reg">注册</button>
+  </div>
+
+  <!-- 登录 -->
+  <div id="paneLogin">
+<div id="modePwd">
+<div class="card">
+<div class="f"><input id="loginUser" placeholder="微信号 / 用户名" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+<div class="f">
+<input id="loginPass" type="password" placeholder="密码" autocomplete="current-password">
+<button class="mid" id="eyeLogin" type="button">显示</button>
+</div>
+</div>
+
+<!-- 登录滑动验证：拖滑块把缺口补齐（只有账号密码登录要过；手机验证码登录不用） -->
+<div id="sliderWrap" class="sliderWrap">
+  <div class="sliderTitle">安全验证</div>
+  <div id="sliderPuzzle" class="sliderPuzzle">
+    <div id="sliderSceneBack" class="sliderScene"></div>
+    <div id="sliderHole" class="sliderHole"></div>
+    <div id="sliderPiece" class="sliderPiece"><div id="sliderScenePiece" class="sliderScene"></div></div>
+  </div>
+  <div id="sliderTrack" class="sliderTrack">
+    <div id="sliderFill" class="sliderFill"></div>
+    <div id="sliderHint" class="sliderHint">按住滑块，拖到最右边</div>
+    <div id="sliderHandle" class="sliderHandle">››</div>
+  </div>
+</div>
+</div>
+
+    <div id="modeCode" class="hide">
+      <div class="card">
+        <div class="f"><input id="loginPhone" placeholder="手机号" inputmode="numeric" autocomplete="tel"></div>
+        <div class="f">
+          <input id="loginCode" placeholder="验证码" inputmode="numeric" maxlength="6">
+          <button class="mid" id="getCode" type="button">获取验证码</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="agree" id="agreeLogin">
+      <span class="box"><i></i></span>
+      <span class="txt">我已阅读并同意 <a href="#" class="lnk">《用户协议》</a> 和 <a href="#" class="lnk">《隐私政策》</a></span>
+    </div>
+    <button class="btn off" id="btnLogin"><span class="sp"></span><span class="tx">登 录</span></button>
+    <div class="tip"><b id="switchMode">用手机验证码登录</b></div>
+    <div class="tip"><b id="forgotPwd">忘记密码？用手机号重置</b></div>
+
+    <div class="or">第三方授权登录</div>
+    <div class="oauth">
+      <button type="button" class="wx" id="authWx">星言授权登录</button>
+      <button type="button" class="qq" id="authQq">QQ 授权登录</button>
+    </div>
+    <div class="authbox" id="authBox">
+      <div class="qr" id="authQr"></div>
+      <div class="num" id="authCode">······</div>
+      <div class="hint2" id="authHint">在已登录的手机上：我 → 设置 → 设备确认登录，输入上面的数字</div>
+      <div class="tip"><b id="authCancel">取消授权登录</b></div>
+    </div>
+  </div>
+
+  <!-- 密码找回 -->
+  <div id="paneReset" class="hide">
+    <p class="hint">
+      <b>密码找回</b>
+      输入绑定过的手机号，收到验证码后直接设一个新密码。重置成功会立刻登录，其他设备需要重新登录。
+    </p>
+    <div class="card">
+      <div class="f"><input id="resetPhone" placeholder="手机号" inputmode="numeric" autocomplete="tel"></div>
+      <div class="f">
+        <input id="resetCode" placeholder="验证码" inputmode="numeric" maxlength="6">
+        <button class="mid" id="getResetCode" type="button">获取验证码</button>
+      </div>
+      <div class="f">
+        <input id="resetPass" type="password" placeholder="新密码（至少 6 位）" autocomplete="new-password">
+        <button class="mid" id="eyeReset" type="button">显示</button>
+      </div>
+    </div>
+    <button class="btn" id="btnReset"><span class="sp"></span><span class="tx">重置并登录</span></button>
+    <div class="tip"><b id="backFromReset">返回登录</b></div>
+  </div>
+
+  <!-- 自助解封 -->
+  <div id="paneUnban" class="hide">
+    <p class="hint">
+      <b>自助解封</b>
+      账号被管理员禁用后，可以用身份证号自己解开。号码要真实合法（18 位，最后一位可能是 X），
+      同一张身份证只能绑定一个账号。
+    </p>
+    <div class="card">
+      <div class="f"><input id="unbUser" placeholder="被封的账号" autocapitalize="off" spellcheck="false"></div>
+      <div class="f">
+        <input id="unbPass" type="password" placeholder="该账号的密码" autocomplete="current-password">
+        <button class="mid" id="eyeUnb" type="button">显示</button>
+      </div>
+      <div class="f"><input id="unbId" placeholder="身份证号（18 位）" maxlength="18" autocapitalize="characters" spellcheck="false"></div>
+    </div>
+    <button class="btn" id="btnUnban"><span class="sp"></span><span class="tx">提交并解封</span></button>
+    <div class="tip"><b id="backLogin">返回登录</b></div>
+  </div>
+
+  <!-- 注册 -->
+  <div id="paneReg" class="hide">
+    <div class="card">
+      <div class="f"><input id="regUser" placeholder="用户名" autocapitalize="off" spellcheck="false"></div>
+      <div class="f"><input id="regNick" placeholder="昵称"></div>
+      <div class="f">
+        <input id="regPass" type="password" placeholder="密码（至少 6 位）" autocomplete="new-password">
+        <button class="mid" id="eyeReg" type="button">显示</button>
+      </div>
+      <div class="f">
+        <input id="regCap" placeholder="图形验证码" autocapitalize="characters" spellcheck="false">
+        <div class="cap" id="capBox" title="点一下换一张"></div>
+      </div>
+    </div>
+    <div class="agree" id="agreeReg">
+      <span class="box"><i></i></span>
+      <span class="txt">我已阅读并同意 <a href="#" class="lnk">《用户协议》</a> 和 <a href="#" class="lnk">《隐私政策》</a></span>
+    </div>
+    <button class="btn off" id="btnReg"><span class="sp"></span><span class="tx">注 册</span></button>
+    <div class="tip"><b id="toLogin">已有账号，去登录</b></div>
+  </div>
+
+  <div class="secure">
+    <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 7V7a3 3 0 1 1 6 0v2H9zm3 4a1.6 1.6 0 0 1 .9 2.9V18h-1.8v-2.1A1.6 1.6 0 0 1 12 13z"/></svg>
+    <span>全程 HTTPS 加密传输，密码只以加密哈希保存</span>
+  </div>
+  <div class="foot">
+    <span class="ub" id="openUnban">账号被禁用？自助解封</span>
+    <span class="ver">数据保存在你自己的服务器上</span>
+  </div>
+</div>
+
+<div class="modal" id="termsModal">
+  <div class="modal-card">
+    <h3 id="termsTitle">用户协议</h3>
+    <pre id="termsBody"></pre>
+    <button id="termsClose">知道了</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="login.js"></script>
+</body>
+</html>

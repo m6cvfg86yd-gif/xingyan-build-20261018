@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Luchat 收付款码</title>
+<style>
+  html,body{margin:0;height:100%;background:#EDEDED;font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;color:#191919}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:360px;background:#fff;border-radius:14px;padding:26px 22px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+  .logo{width:52px;height:52px;border-radius:13px;background:#07C160;color:#fff;font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+  h1{font-size:17px;margin:0 0 8px;font-weight:600}
+  p{margin:6px 0;color:#7A7A7A;font-size:14px}
+  .amt{font-size:30px;font-weight:600;color:#191919;margin:14px 0 2px}
+  .steps{text-align:left;background:#F7F7F7;border-radius:10px;padding:12px 14px;margin-top:16px;font-size:13.5px;color:#4A4A4A}
+  .steps b{color:#191919}
+  .tip{margin-top:14px;font-size:12.5px;color:#9A9A9A}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo">L</div>
+      <h1>Luchat 收付款码</h1>
+      <div class="amt" id="amt" style="display:none"></div>
+      <p>这是一张收付款码，请打开 <b>Luchat</b> App 扫码付款</p>
+      <div class="steps">
+        <div>1. 打开 Luchat，点会话右上角「＋」→ <b>扫一扫</b></div>
+        <div>2. 对着这张二维码扫一下</div>
+        <div>3. 输入金额 → 支付密码，钱当时到对方账上</div>
+      </div>
+      <div class="tip">付款前请先确认收款人是谁；付款码只用于向商家付款，别发给陌生人。</div>
+    </div>
+  </div>
+<script>
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var a = parseFloat(q.get('a') || '');
+      if (isFinite(a) && a > 0) {
+        document.getElementById('amt').textContent = '¥' + a.toFixed(2);
+        document.getElementById('amt').style.display = 'block';
+      }
+    } catch (e) { }
+  })();
+</script>
+</body>
+</html>

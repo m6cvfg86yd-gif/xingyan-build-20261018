@@ -1,0 +1,10 @@
+$f = "C:\Users\Administrator\Documents\Codex\2026-09-24\ji\work\chris-native\Sources\MallNative.swift"
+$raw = [IO.File]::ReadAllText($f)
+Write-Output ("before: r8=" + ([regex]::Matches($raw, [regex]::Escape("cornerRadius: 8, style: .continuous"))).Count)
+$new = $raw.Replace("cornerRadius: 8, style: .continuous", "cornerRadius: 14, style: .continuous")
+$new = $new.Replace("RoundedRectangle(cornerRadius: 4)", "RoundedRectangle(cornerRadius: 4, style: .continuous)")
+$new = $new.Replace("RoundedRectangle(cornerRadius: 6)", "RoundedRectangle(cornerRadius: 6, style: .continuous)")
+$new = $new.Replace("RoundedRectangle(cornerRadius: 22)", "RoundedRectangle(cornerRadius: 22, style: .continuous)")
+$new = $new.Replace("RoundedRectangle(cornerRadius: 23)", "RoundedRectangle(cornerRadius: 23, style: .continuous)")
+[IO.File]::WriteAllText($f, $new)
+Write-Output ("after: r8=" + ([regex]::Matches($new, [regex]::Escape("cornerRadius: 8, style: .continuous"))).Count + "  r14=" + ([regex]::Matches($new, [regex]::Escape("cornerRadius: 14, style: .continuous"))).Count)

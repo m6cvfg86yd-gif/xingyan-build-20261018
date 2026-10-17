@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+  <key>CFBundleExecutable</key><string>CHRIS</string>
+  <key>CFBundleIdentifier</key><string>com.chris.chatnative</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleName</key><string>Luchat</string>
+  <key>CFBundleDisplayName</key><string>Luchat</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>LSRequiresIPhoneOS</key><true/>
+  <key>MinimumOSVersion</key><string>16.0</string>
+  <key>UIDeviceFamily</key><array><integer>1</integer></array>
+  <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>
+  <key>UIBackgroundModes</key>
+  <array><string>remote-notification</string><string>audio</string></array>
+  <key>UILaunchScreen</key>
+  <dict>
+    <key>UIColorName</key><string>LaunchBg</string>
+  </dict>
+  <key>UISupportedInterfaceOrientations</key>
+  <array><string>UIInterfaceOrientationPortrait</string></array>
+  <key>UIViewControllerBasedStatusBarAppearance</key><true/>
+  <key>NSFaceIDUsageDescription</key><string>CHRIS聊天 需要面容 ID 让你刷脸登录</string>
+  <key>NSMicrophoneUsageDescription</key><string>CHRIS聊天 需要使用麦克风进行语音聊天和语音通话</string>
+  <key>NSCameraUsageDescription</key><string>CHRIS聊天 需要使用摄像头拍照和视频通话</string>
+	<key>NSSpeechRecognitionUsageDescription</key><string>CHRIS聊天 需要使用语音识别，让你能跟 AI 助手说话、发送语音转文字，以及用声音锁读出数字登录</string>
+  <key>NSPhotoLibraryUsageDescription</key><string>CHRIS聊天 需要访问相册以便发送图片</string>
+  <key>NSPhotoLibraryAddUsageDescription</key><string>CHRIS聊天 需要把图片保存到相册</string>
+  <key>NSLocalNetworkUsageDescription</key><string>CHRIS聊天 需要访问局域网里的聊天服务器</string>
+  <key>NSLocationWhenInUseUsageDescription</key><string>CHRIS聊天 需要用位置来显示「附近的人」（只在你看这个页面时用一次，不会一直跟踪）</string>
+  <key>NSMotionUsageDescription</key><string>CHRIS聊天 需要读取运动数据来实现「摇一摇」（摇手机找人，不会记录你的运动）</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key><true/>
+  </dict>
+  <key>LSApplicationQueriesSchemes</key>
+  <array>
+    <string>imeituan</string>
+    <string>meituan</string>
+    <string>taobao</string>
+    <string>tmast</string>
+    <string>alipays</string>
+    <string>alipay</string>
+  </array>
+  <key>CFBundleIcons</key>
+  <dict>
+    <key>CFBundlePrimaryIcon</key>
+    <dict>
+      <key>CFBundleIconFiles</key>
+      <array><string>AppIcon60x60</string></array>
+    </dict>
+  </dict>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>所有文件</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.item</string>
+				<string>public.content</string>
+				<string>public.data</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
+
